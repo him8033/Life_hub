@@ -139,11 +139,13 @@ AUTH_USER_MODEL = "account.User"
 
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "account.email_backend_no_verify.NoVerifyEmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
-EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # jwt settings
 SIMPLE_JWT = {
@@ -182,9 +184,11 @@ SIMPLE_JWT = {
 
 PASSWORD_RESET_TIMEOUT = 900  # 900 second = 15 Minutes
 
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     # "https://example.com",
     # "https://sub.example.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.56.1:3000",
 ]
