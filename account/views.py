@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from rest_framework import status, serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from account.serializers import (
@@ -11,6 +12,7 @@ from account.serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
     UserProfileSerializer,
+    CustomTokenRefreshSerializer,
 )
 from account.renderers import UserRenderer
 from account.utils import send_jwt_token_response
@@ -112,6 +114,14 @@ class UserPasswordResetView(APIView):
             {"message": "Password reset successfully."},
             status=status.HTTP_200_OK,
         )
+
+
+class UserTokenRefreshView(TokenRefreshView):
+    """
+    Refresh access token using refresh token
+    """
+    serializer_class = CustomTokenRefreshSerializer
+    renderer_classes = [UserRenderer]
 
 
 class ServerTest(APIView):

@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework import serializers
 from account.models import User
 from account.utils import Util
@@ -58,9 +59,15 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for returning profile info"""
+
+    role = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "email", "name"]
+        fields = ["id", "email", "role"]
+
+    def get_role(self, obj):
+        return "admin" if obj.is_admin else "user"
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
@@ -146,3 +153,15 @@ class UserPasswordResetSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"non_field_errors": ["Invalid or expired token"]}
             )
+
+
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    """
+    Custom serializer to keep response format consistent
+    """
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        return {
+            "access": data["access"]
+        }

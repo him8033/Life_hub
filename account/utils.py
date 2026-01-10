@@ -12,7 +12,7 @@ def send_jwt_token_response(user):
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
-        "user": {"id": user.id, "email": user.email, "name": user.name},
+        "user": {"id": user.id, "email": user.email, "name": user.name, "role": "Admin" if user.is_admin else "User"},
     }
 
 

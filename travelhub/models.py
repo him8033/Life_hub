@@ -1,8 +1,22 @@
 from django.db import models
 from django.conf import settings
+from .utils import generate_ulid_with_prefix
 
 
 class TravelSpot(models.Model):
+    # Internal DB ID (never exposed)
+    id = models.BigAutoField(primary_key=True)
+
+    # Public Company ID
+    travelspot_id = models.CharField(
+        max_length=50,
+        unique=True,
+        editable=False,
+        db_index=True,
+        null=True,      # TEMP
+        blank=True      # TEMP
+    )
+
     # Basic Info
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
@@ -48,6 +62,15 @@ class TravelSpot(models.Model):
             models.Index(fields=["city"]),
             models.Index(fields=["slug"]),
         ]
+
+    def save(self, *args, **kwargs):
+        if not self.travelspot_id:
+            while True:
+                candidate = generate_ulid_with_prefix("trv")
+                if not TravelSpot.objects.filter(travelspot_id=candidate).exists():
+                    self.travelspot_id = candidate
+                    break
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
