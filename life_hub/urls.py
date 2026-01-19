@@ -20,5 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/user/', include('account.urls')),  # <--- Auth APIs
-    path('api/v1/', include('travelhub.urls')),  # <--- TravelSpot APIs
+    # path('api/v1/', include('travelhub.urls')),  # <--- TravelSpot APIs
+    path('api/v1/', include('travelhub.urls.spot_category')),  # <--- TravelSpot APIs
+    path('api/v1/', include('travelhub.urls.travel_spot')),  # <--- TravelSpot APIs
 ]

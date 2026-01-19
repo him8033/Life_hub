@@ -4,15 +4,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
-from .models import TravelSpot
-from .serializers import (
+from travelhub.models import TravelSpot
+from travelhub.serializers import (
     TravelSpotSerializer
 )
-from .renderers import UserRenderer
+from travelhub.renderers import UserRenderer
 
 
 # ======================================================
-# 🌍 PUBLIC LISTING (ONE ROUTE, PUBLIC ONLY)
+# PUBLIC LISTING (ONE ROUTE, PUBLIC ONLY)
 # ======================================================
 
 class TravelSpotListAPIView(APIView):
@@ -20,7 +20,6 @@ class TravelSpotListAPIView(APIView):
     Public listing:
     - Anyone can access
     - Only active travel spots
-    - Limited fields (Public serializer)
     """
     renderer_classes = [UserRenderer]
     permission_classes = []
@@ -40,7 +39,7 @@ class TravelSpotListAPIView(APIView):
 
 
 # ======================================================
-# 🔍 FULL VIEW (SAME ROUTE FOR PUBLIC + ADMIN)
+# FULL VIEW (SAME ROUTE FOR PUBLIC + ADMIN)
 # ======================================================
 
 class TravelSpotDetailAPIView(APIView):
@@ -70,7 +69,7 @@ class TravelSpotDetailAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 🔐 Decide serializer based on auth
+        # Decide serializer based on auth
         # if request.user.is_authenticated:
         #     serializer = TravelSpotSerializer(spot)
         # else:
@@ -89,7 +88,7 @@ class TravelSpotDetailAPIView(APIView):
 
 
 # ======================================================
-# 🔐 ADMIN CRUD (SAME DETAIL ROUTE, WRITE REQUIRES AUTH)
+# ADMIN CRUD (SAME DETAIL ROUTE, WRITE REQUIRES AUTH)
 # ======================================================
 
 class TravelSpotListCreateAPIView(APIView):

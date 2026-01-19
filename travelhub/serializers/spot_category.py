@@ -1,36 +1,15 @@
 from rest_framework import serializers
-from .models import TravelSpot
+from travelhub.models import SpotCategory
 
 
-# class PublicTravelSpotSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = TravelSpot
-#         fields = [
-#             "id",
-#             "travelspot_id",
-#             "name",
-#             "slug",
-#             "short_description",
-#             "city",
-#             "latitude",
-#             "longitude",
-#             "created_at"
-#         ]
-
-
-class TravelSpotSerializer(serializers.ModelSerializer):
+class SpotCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = TravelSpot
+        model = SpotCategory
         fields = [
             "id",
-            "travelspot_id",
+            "spotcategory_id",
             "name",
             "slug",
-            "short_description",
-            "full_address",
-            "city",
-            "latitude",
-            "longitude",
             "is_active",
             "created_by",
             "updated_by",
@@ -38,10 +17,15 @@ class TravelSpotSerializer(serializers.ModelSerializer):
             "updated_at",
             "deleted_at",
         ]
-        read_only_fields = (
-            "travelspot_id", "created_by", "updated_by",
-            "created_at", "updated_at", "deleted_at"
-        )
+        read_only_fields = [
+            "id",
+            "spotcategory_id",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+            "deleted_at"
+        ]
 
     def create(self, validated_data):
         # Automatically set the logged-in user as created_by & updated_by

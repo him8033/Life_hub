@@ -1,17 +1,10 @@
 from django.urls import path
-from .views import (
+from travelhub.views.travelspot_views import (
     TravelSpotListAPIView,
     TravelSpotListCreateAPIView,
     TravelSpotDetailAPIView,
     TravelSpotUpdateDeleteAPIView
 )
-
-# urlpatterns = [
-#     path("", TravelSpotListCreateAPIView.as_view(),
-#          name="travelspot-listcreate"),
-#     path("<str:slug>/", TravelSpotDetailAPIView.as_view(),
-#          name="travelspot-detail"),
-# ]
 
 urlpatterns = [
     path("travel-spots/", TravelSpotListAPIView.as_view()),
