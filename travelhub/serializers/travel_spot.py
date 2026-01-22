@@ -1,8 +1,26 @@
 from rest_framework import serializers
 from travelhub.models import TravelSpot
+from travelhub.models import SpotCategory
+from travelhub.serializers.spot_category_read import SpotCategoryReadSerializer
 
 
 class TravelSpotSerializer(serializers.ModelSerializer):
+    # WRITE ONLY (IDs)
+    categories = serializers.SlugRelatedField(
+        slug_field="spotcategory_id",
+        queryset=SpotCategory.objects.filter(deleted_at__isnull=True),
+        many=True,
+        required=False,
+        write_only=True
+    )
+
+    # READ ONLY (Full Objects)
+    category_details = SpotCategoryReadSerializer(
+        source="categories",
+        many=True,
+        read_only=True
+    )
+
     class Meta:
         model = TravelSpot
         fields = [
@@ -15,6 +33,8 @@ class TravelSpotSerializer(serializers.ModelSerializer):
             "city",
             "latitude",
             "longitude",
+            "categories",          # write
+            "category_details",    # read
             "is_active",
             "created_by",
             "updated_by",

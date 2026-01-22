@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from travelhub.utils import generate_ulid_with_prefix
+from travelhub.models import SpotCategory
 
 
 class TravelSpot(models.Model):
@@ -32,6 +33,13 @@ class TravelSpot(models.Model):
     )
     longitude = models.DecimalField(
         max_digits=11, decimal_places=8, null=True, blank=True
+    )
+
+    # Categories
+    categories = models.ManyToManyField(
+        SpotCategory,
+        related_name="travel_spots",
+        blank=True
     )
 
     # Status
