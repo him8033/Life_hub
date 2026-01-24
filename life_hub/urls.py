@@ -23,4 +23,5 @@ urlpatterns = [
     # path('api/v1/', include('travelhub.urls')),  # <--- TravelSpot APIs
     path('api/v1/', include('travelhub.urls.spot_category')),  # <--- TravelSpot APIs
     path('api/v1/', include('travelhub.urls.travel_spot')),  # <--- TravelSpot APIs
+    path('api/v1/locations/', include('locations.urls')),  # <--- location APIs
 ]

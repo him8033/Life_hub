@@ -29,12 +29,21 @@ class TravelSpotSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "short_description",
+            "long_description",
+
+            "entry_fee",
+            "opening_time",
+            "closing_time",
+            "best_time_to_visit",
+
             "full_address",
             "city",
             "latitude",
             "longitude",
+            
             "categories",          # write
             "category_details",    # read
+            
             "is_active",
             "created_by",
             "updated_by",

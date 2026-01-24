@@ -23,8 +23,27 @@ class TravelSpot(models.Model):
     slug = models.SlugField(unique=True)
 
     short_description = models.TextField(null=True, blank=True)
-    full_address = models.TextField(null=True, blank=True)
+    long_description = models.TextField(null=True, blank=True)
 
+    entry_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Entry fee in local currency; 0 for free"
+    )
+
+    opening_time = models.TimeField(null=True, blank=True)
+    closing_time = models.TimeField(null=True, blank=True)
+
+    best_time_to_visit = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="e.g. Oct–Mar, Early Morning, Evenings"
+    )
+
+    full_address = models.TextField(null=True, blank=True)
     city = models.CharField(max_length=100, default='Delhi')
 
     # Location Coordinates

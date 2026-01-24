@@ -33,9 +33,31 @@ class VillageSerializer(serializers.ModelSerializer):
 
 
 class PincodeSerializer(serializers.ModelSerializer):
-    # This includes village name so the user knows where the PIN belongs
-    village_name = serializers.ReadOnlyField(source='village.name')
+    village_name = serializers.CharField(source='village.name', read_only=True)
+    village_category = serializers.CharField(source='village.category', read_only=True)
+    sub_district_name = serializers.CharField(
+        source='village.sub_district.name', read_only=True
+    )
+    district_name = serializers.CharField(
+        source='village.sub_district.district.name', read_only=True
+    )
+    state_name = serializers.CharField(
+        source='village.sub_district.district.state.name', read_only=True
+    )
+    country_name = serializers.CharField(
+        source='village.sub_district.district.state.country.name', read_only=True
+    )
 
     class Meta:
         model = Pincode
-        fields = ['id', 'pincode', 'village', 'village_name']
+        fields = [
+            'id',
+            'pincode',
+            'village',
+            'village_name',
+            'village_category',
+            'sub_district_name',
+            'district_name',
+            'state_name',
+            'country_name',
+        ]

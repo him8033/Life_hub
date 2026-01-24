@@ -2,10 +2,10 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    path('countries/', CountryList.as_view(), name='country-list'),
-    path('states/', StateList.as_view(), name='state-list'),
-    path('districts/', DistrictList.as_view(), name='district-list'),
-    path('sub-districts/', SubDistrictList.as_view(), name='sub-district-list'),
-    path('villages/', VillageList.as_view(), name='village-list'),
-    path('pincodes/', PincodeList.as_view(), name='pincode-list'),
+    path('countries/', CountryAPIView.as_view()),
+    path('states/', StateAPIView.as_view()),
+    path('districts/', DistrictAPIView.as_view()),
+    path('sub-districts/', SubDistrictAPIView.as_view()),
+    path('villages/', VillageAPIView.as_view()),
+    path('pincodes/', PincodeAPIView.as_view()),
 ]
