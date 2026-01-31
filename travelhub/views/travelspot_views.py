@@ -69,16 +69,6 @@ class TravelSpotDetailAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Decide serializer based on auth
-        # if request.user.is_authenticated:
-        #     serializer = TravelSpotSerializer(spot)
-        # else:
-        #     if not spot.is_active:
-        #         return Response(
-        #             {"message": "Travel spot not available"},
-        #             status=status.HTTP_404_NOT_FOUND
-        #         )
-        #     serializer = PublicTravelSpotSerializer(spot)
         serializer = TravelSpotSerializer(spot)
 
         return Response({
@@ -133,17 +123,17 @@ class TravelSpotUpdateDeleteAPIView(APIView):
     renderer_classes = [UserRenderer]
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self, slug):
+    def get_object(self, travelspot_id):
         try:
             return TravelSpot.objects.get(
-                slug=slug,
+                travelspot_id=travelspot_id,
                 deleted_at__isnull=True
             )
         except TravelSpot.DoesNotExist:
             return None
 
-    def put(self, request, slug):
-        spot = self.get_object(slug)
+    def put(self, request, travelspot_id):
+        spot = self.get_object(travelspot_id)
         if not spot:
             return Response(
                 {"message": "Travel spot not found"},
@@ -166,8 +156,8 @@ class TravelSpotUpdateDeleteAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, slug):
-        spot = self.get_object(slug)
+    def delete(self, request, travelspot_id):
+        spot = self.get_object(travelspot_id)
         if not spot:
             return Response(
                 {"message": "Travel spot not found"},

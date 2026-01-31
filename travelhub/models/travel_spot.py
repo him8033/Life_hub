@@ -2,6 +2,14 @@ from django.db import models
 from django.conf import settings
 from travelhub.utils import generate_ulid_with_prefix
 from travelhub.models import SpotCategory
+from locations.models import (
+    Country,
+    State,
+    District,
+    SubDistrict,
+    Village,
+    Pincode
+)
 
 
 class TravelSpot(models.Model):
@@ -43,8 +51,46 @@ class TravelSpot(models.Model):
         help_text="e.g. Oct–Mar, Early Morning, Evenings"
     )
 
+    # Structured Location
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    state = models.ForeignKey(
+        State,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    district = models.ForeignKey(
+        District,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    sub_district = models.ForeignKey(
+        SubDistrict,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    village = models.ForeignKey(
+        Village,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    pincode = models.ForeignKey(
+        Pincode,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
+    # Human readable address
     full_address = models.TextField(null=True, blank=True)
-    city = models.CharField(max_length=100, default='Delhi')
 
     # Location Coordinates
     latitude = models.DecimalField(
@@ -61,8 +107,26 @@ class TravelSpot(models.Model):
         blank=True
     )
 
+    completion_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("basic_info", "Basic Information"),
+            ("location", "Location Added"),
+            ("details", "Details Added"),
+            ("images", "Images Added"),
+            ("complete", "Complete"),
+        ],
+        default="basic_info",
+        db_index=True
+    )
+
+    is_ready_for_review = models.BooleanField(
+        default=False,
+        help_text="Admin review required before public listing"
+    )
+
     # Status
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
 
     # Auth tracking
     created_by = models.ForeignKey(
@@ -86,7 +150,6 @@ class TravelSpot(models.Model):
     class Meta:
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["city"]),
             models.Index(fields=["slug"]),
         ]
 
