@@ -1,6 +1,7 @@
 # travelhub/views/category_views.py
 
 from django.utils import timezone
+from django.db.models import Count, Q
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -31,6 +32,12 @@ class SpotCategoryListAPIView(APIView):
         categories = SpotCategory.objects.filter(
             is_active=True,
             deleted_at__isnull=True
+        ).annotate(
+            total_spots=Count(
+                "travel_spots",
+                filter=Q(travel_spots__is_active=True),
+                distinct=True
+            )
         ).order_by("-created_at")
 
         serializer = SpotCategorySerializer(categories, many=True)
@@ -94,6 +101,12 @@ class SpotCategoryListCreateAPIView(APIView):
     def get(self, request):
         category = SpotCategory.objects.filter(
             deleted_at__isnull=True
+        ).annotate(
+            total_spots=Count(
+                "travel_spots",
+                filter=Q(travel_spots__is_active=True),
+                distinct=True
+            )
         ).order_by("-created_at")
 
         serializer = SpotCategorySerializer(category, many=True)
@@ -176,3 +189,38 @@ class SpotCategoryUpdateDeleteAPIView(APIView):
             {"message": f"Spot Category '{category.name}' has been deleted successfully."},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class SpotCategoryCheckAPIView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        name = request.query_params.get("name", "").strip()
+        exclude_id = request.query_params.get("exclude_id")
+
+        if not name:
+            return Response({
+                "message": "Name is empty",
+                "data": {
+                    "exists": False
+                }
+            })
+
+        query = SpotCategory.objects.filter(
+            name__iexact=name,
+            deleted_at__isnull=True
+        )
+
+        # Skip current record in edit mode
+        if exclude_id:
+            query = query.exclude(spotcategory_id=exclude_id)
+
+        exists = query.exists()
+
+        return Response({
+            "message": "Name check completed",
+            "data": {
+                "exists": exists
+            }
+        })

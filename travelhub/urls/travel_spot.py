@@ -5,6 +5,7 @@ from travelhub.views.travelspot_views import (
     TravelSpotListCreateAPIView,
     TravelSpotDetailAPIView,
     TravelSpotUpdateDeleteAPIView,
+    TravelSpotNameCheckAPIView
 )
 
 from travelhub.views.travelspot_steps.basic_info import (
@@ -18,6 +19,9 @@ from travelhub.views.travelspot_steps.details import (
 )
 from travelhub.views.travelspot_steps.submit import (
     TravelSpotSubmitAPIView,
+)
+from travelhub.views.nearby import (
+    NearbyTravelSpotsAPIView
 )
 
 urlpatterns = [
@@ -33,6 +37,20 @@ urlpatterns = [
         "travel-spots/<str:slug>/",
         TravelSpotDetailAPIView.as_view(),
         name="travelspot-detail",
+    ),
+    path(
+        "travel-spots/<slug:slug>/nearby/",
+        NearbyTravelSpotsAPIView.as_view(),
+        name="nearby-travel-spots"
+    ),
+
+    # =========================
+    # Admin Utilities
+    # =========================
+    path(
+        "admin/travel-spots/check-name/",
+        TravelSpotNameCheckAPIView.as_view(),
+        name="travelspot-check-name"
     ),
 
     # =========================

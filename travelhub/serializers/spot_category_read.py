@@ -5,6 +5,7 @@ from travelhub.models import SpotCategory
 
 
 class SpotCategoryReadSerializer(serializers.ModelSerializer):
+    total_spots = serializers.IntegerField(read_only=True)
     class Meta:
         model = SpotCategory
         fields = [
@@ -13,6 +14,7 @@ class SpotCategoryReadSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "is_active",
+            "total_spots",
             "created_by",
             "updated_by",
             "created_at",

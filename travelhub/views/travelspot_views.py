@@ -8,7 +8,7 @@ from travelhub.models import TravelSpot
 from travelhub.serializers import (
     TravelSpotSerializer
 )
-from travelhub.renderers import UserRenderer
+from life_hub.renderers import UserRenderer
 
 
 # ======================================================
@@ -173,3 +173,38 @@ class TravelSpotUpdateDeleteAPIView(APIView):
             {"message": "Travel spot deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class TravelSpotNameCheckAPIView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        name = request.query_params.get("name", "").strip()
+        exclude_id = request.query_params.get("exclude_id")
+
+        if not name:
+            return Response({
+                "message": "Name is empty",
+                "data": {
+                    "exists": False
+                }
+            })
+
+        query = TravelSpot.objects.filter(
+            name__iexact=name,
+            deleted_at__isnull=True
+        )
+
+        # Skip current record in edit mode
+        if exclude_id:
+            query = query.exclude(travelspot_id=exclude_id)
+
+        exists = query.exists()
+
+        return Response({
+            "message": "Name check completed",
+            "data": {
+                "exists": exists
+            }
+        })
