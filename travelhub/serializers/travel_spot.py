@@ -152,6 +152,7 @@ class TravelSpotSerializer(serializers.ModelSerializer):
             "opening_time",
             "closing_time",
             "best_time_to_visit",
+            "view_count",
 
             # Form Progress Status
             "completion_status",
@@ -169,6 +170,7 @@ class TravelSpotSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "travelspot_id",
+            "view_count",
             "created_by",
             "updated_by",
             "created_at",

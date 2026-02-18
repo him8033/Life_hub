@@ -1,11 +1,15 @@
 from django.urls import path
 
 from travelhub.views.travelspot_views import (
-    TravelSpotListAPIView,
-    TravelSpotListCreateAPIView,
     TravelSpotDetailAPIView,
     TravelSpotUpdateDeleteAPIView,
-    TravelSpotNameCheckAPIView
+    TravelSpotNameCheckAPIView,
+    TravelSpotVisitorListAPIView
+)
+
+from travelhub.views.travelspot_list import (
+    TravelSpotListAPIView,
+    TravelSpotListCreateAPIView
 )
 
 from travelhub.views.travelspot_steps.basic_info import (
@@ -94,5 +98,12 @@ urlpatterns = [
         "admin/travel-spots/<str:travelspot_id>/steps/submit/",
         TravelSpotSubmitAPIView.as_view(),
         name="travelspot-step-submit",
+    ),
+
+    # Travelspot visitors
+    path(
+        "admin/travel-spots/<str:travelspot_id>/visitors/",
+        TravelSpotVisitorListAPIView.as_view(),
+        name="travelspot-visitors",
     ),
 ]

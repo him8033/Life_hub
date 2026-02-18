@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from travelhub.utils import generate_ulid_with_prefix
+from life_hub.utils import generate_ulid_with_prefix
 from travelhub.models import SpotCategory
 from locations.models import (
     Country,
@@ -107,6 +107,8 @@ class TravelSpot(models.Model):
         blank=True
     )
 
+    view_count = models.PositiveIntegerField(default=0, db_index=True)
+
     completion_status = models.CharField(
         max_length=20,
         choices=[
@@ -151,6 +153,12 @@ class TravelSpot(models.Model):
         ordering = ["name"]
         indexes = [
             models.Index(fields=["slug"]),
+            models.Index(fields=["state"]),
+            models.Index(fields=["district"]),
+            models.Index(fields=["sub_district"]),
+            models.Index(fields=["village"]),
+            models.Index(fields=["view_count"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def save(self, *args, **kwargs):

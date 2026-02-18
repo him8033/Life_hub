@@ -28,9 +28,9 @@ class NearbySpotSerializer(serializers.ModelSerializer):
         from cloudinary.utils import cloudinary_url
         url, _ = cloudinary_url(
             image.public_id,
-            width=400,
-            height=300,
-            crop="fill",
+            # width=800,
+            # height=450,     # 16:9
+            # crop="fill",
             quality="auto",
             fetch_format="auto"
         )

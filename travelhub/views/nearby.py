@@ -5,9 +5,13 @@ from django.db.models import F, FloatField, ExpressionWrapper
 from django.db.models.functions import ACos, Cos, Sin, Radians
 from travelhub.models import TravelSpot
 from travelhub.serializers.nearby_spot import NearbySpotSerializer
+from travelhub.pagination import NearBySpotCursorPagination
+from life_hub.renderers import UserRenderer
 
 
 class NearbyTravelSpotsAPIView(APIView):
+    renderer_classes = [UserRenderer]
+
     def get(self, request, slug):
         try:
             spot = TravelSpot.objects.get(
@@ -27,9 +31,15 @@ class NearbyTravelSpotsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Get query params
-        radius = float(request.query_params.get("radius", 50))
-        limit = int(request.query_params.get("limit", 10))
+        # query param
+        try:
+            radius = float(request.query_params.get("radius", 50))
+        except (TypeError, ValueError):
+            radius = 50
+
+        sort = request.query_params.get("sort", "distance")
+        if sort not in ["distance", "most_visited"]:
+            sort = "distance"
 
         lat = float(spot.latitude)
         lon = float(spot.longitude)
@@ -46,7 +56,7 @@ class NearbyTravelSpotsAPIView(APIView):
             output_field=FloatField()
         )
 
-        nearby_spots = (
+        queryset = (
             TravelSpot.objects
             .filter(
                 is_active=True,
@@ -57,12 +67,21 @@ class NearbyTravelSpotsAPIView(APIView):
             .exclude(id=spot.id)
             .annotate(distance_km=distance_expr)
             .filter(distance_km__lte=radius)
-            .order_by("distance_km")[:limit]
         )
 
-        serializer = NearbySpotSerializer(nearby_spots, many=True)
+        # -------------------------
+        # Offset Pagination
+        # -------------------------
 
-        return Response({
-            "message": "Nearby spots fetched successfully",
-            "data": serializer.data
-        })
+        paginator = NearBySpotCursorPagination()
+                
+        # Set ordering dynamically
+        if sort == "most_visited":
+            paginator.ordering = ("-view_count", "distance_km", "id")
+        else:
+            paginator.ordering = ("distance_km", "id")
+            
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        serializer = NearbySpotSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

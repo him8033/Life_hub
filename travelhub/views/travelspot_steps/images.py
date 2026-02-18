@@ -20,7 +20,7 @@ from travelhub.serializers.spot_image import (
 
 class TravelSpotImageAPIView(APIView):
     renderer_classes = [UserRenderer]
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, travelspot_id):
         spot = TravelSpot.objects.get(

@@ -9,10 +9,11 @@ from rest_framework import status, permissions
 
 from travelhub.models import SpotCategory
 from travelhub.serializers import SpotCategorySerializer
-from travelhub.renderers import UserRenderer
+from life_hub.renderers import UserRenderer
 
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from travelhub.pagination import SpotCategoryOffsetPagination
 
 # ======================================================
 # PUBLIC LISTING (ONE ROUTE, PUBLIC ONLY)
@@ -38,7 +39,7 @@ class SpotCategoryListAPIView(APIView):
                 filter=Q(travel_spots__is_active=True),
                 distinct=True
             )
-        ).order_by("-created_at")
+        ).order_by("name")
 
         serializer = SpotCategorySerializer(categories, many=True)
 
@@ -99,7 +100,7 @@ class SpotCategoryListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        category = SpotCategory.objects.filter(
+        queryset = SpotCategory.objects.filter(
             deleted_at__isnull=True
         ).annotate(
             total_spots=Count(
@@ -107,14 +108,53 @@ class SpotCategoryListCreateAPIView(APIView):
                 filter=Q(travel_spots__is_active=True),
                 distinct=True
             )
-        ).order_by("-created_at")
+        )
 
-        serializer = SpotCategorySerializer(category, many=True)
+        # -------------------------
+        # Filters
+        # -------------------------
+        search = request.query_params.get("search")
+        is_active = request.query_params.get("is_active")
 
-        return Response({
-            "message": "Spot Categories fetched successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+        if is_active in ["true", "false"]:
+            queryset = queryset.filter(is_active=(is_active == "true"))
+
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search)
+            )
+
+        # Avoid duplicates due to M2M
+        queryset = queryset.distinct()
+
+        # -------------------------
+        # Sorting
+        # -------------------------
+        allowed_orderings = [
+            "name",
+            "-name",
+            "created_at",
+            "-created_at",
+        ]
+
+        ordering = request.query_params.get("ordering", "-created_at")
+
+        if ordering not in allowed_orderings:
+            ordering = "-created_at"
+
+        # APPLY ORDERING HERE (important)
+        queryset = queryset.order_by(ordering)
+
+        # -------------------------
+        # Offset Pagination
+        # -------------------------
+
+        paginator = SpotCategoryOffsetPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        serializer = SpotCategorySerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         serializer = SpotCategorySerializer(

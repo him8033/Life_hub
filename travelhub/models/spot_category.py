@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from travelhub.utils import generate_ulid_with_prefix
+from life_hub.utils import generate_ulid_with_prefix
 
 
 class SpotCategory(models.Model):

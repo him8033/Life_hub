@@ -5,8 +5,10 @@ from .category_views import (
     SpotCategoryUpdateDeleteAPIView,
 )
 from .travelspot_views import (
-    TravelSpotListAPIView,
     TravelSpotDetailAPIView,
-    TravelSpotListCreateAPIView,
     TravelSpotUpdateDeleteAPIView,
+)
+from .travelspot_list import (
+    TravelSpotListAPIView,
+    TravelSpotListCreateAPIView
 )
