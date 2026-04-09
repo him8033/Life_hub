@@ -67,7 +67,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://your-frontend-domain.com",   # replace later
+    "https://lifehub-teal.vercel.app",   # replace later
 ]
 
 # -----------------------------
