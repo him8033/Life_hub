@@ -30,7 +30,7 @@ SECRET_KEY = "django-insecure-1sy+wu_ap_u@+1hqgvlt*tc1(zuamr^hid_@v25+8)=62)0cjt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.onrender.com']
 
 
 # Application definition
@@ -206,6 +206,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.168.56.1:3000",
 ]
 
+STATIC_ROOT = BASE_DIR/'staticfiles'
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 cloudinary.config(

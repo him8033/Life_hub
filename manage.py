@@ -8,7 +8,9 @@ import dotenv
 def main():
     dotenv.load_dotenv()
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'life_hub.settings')
+
+    settings_module = 'life_hub.deployment_settings' if 'RENDER_EXTERNAL_HOSTNAME' in os.environ else 'life_hub.settings'
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
