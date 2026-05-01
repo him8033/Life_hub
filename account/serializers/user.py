@@ -5,7 +5,7 @@ from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeErr
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework import serializers
-from account.models import User
+from account.models.user import User
 from account.utils import Util
 
 # from django.contrib.auth.password_validation import validate_password  # for password vaidation when creating new user and password validation
@@ -29,7 +29,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "name", "password", "password2", "tc"]
+        fields = ["email", "first_name", "last_name", "password", "password2", "tc"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate_tc(self, value):
@@ -60,14 +60,14 @@ class UserLoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for returning profile info"""
 
-    role = serializers.SerializerMethodField()
+    # role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "email", "role"]
+        fields = ["id", "email", "first_name", "last_name", "role"]
 
-    def get_role(self, obj):
-        return "admin" if obj.is_admin else "user"
+    # def get_role(self, obj):
+    #     return "admin" if obj.is_admin else "user"
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
@@ -108,7 +108,7 @@ class SendPasswordResetEmailSerializer(serializers.Serializer):
         reset_link = f"{frontend_url}/auth/reset_password/{uid}/{token}"
 
         body = f"""
-            <p>Hello {user.name},</p>
+            <p>Hello {user.first_name} {user.last_name},</p>
             <p>Click the link below to reset your password:</p>
             <a href="{reset_link}">{reset_link}</a>
             <p>If you didn’t request this, please ignore this email.</p>

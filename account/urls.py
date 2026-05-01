@@ -1,22 +1,92 @@
+# account/urls.py
+
 from django.urls import path
-from account.views import (
+
+# =========================
+# AUTH VIEWS
+# =========================
+from account.views.user_views import (
     SendPasswordResetEmailView,
     UserChangePasswordView,
     UserPasswordResetView,
     UserRegistrationView,
     UserLoginView,
-    UserProfileView,
     UserTokenRefreshView,
-    ServerTest,
+)
+
+# =========================
+# USER + PROFILE VIEWS
+# =========================
+from account.views.user_profile import (
+    UserProfileAPIView,
+    UserProfileImageAPIView,
+    UserProfileImageDeleteAPIView,
+    UserMeAPIView,  # 👈 NEW (important)
+)
+
+# =========================
+# SOCIAL LINKS
+# =========================
+from account.views.user_social_link import (
+    UserSocialLinkAPIView,
+    UserSocialLinkUpdateAPIView,
+    UserSocialLinkSetPrimaryAPIView,
+    UserSocialLinkReorderAPIView,
+    UserSocialLinkDeleteAPIView
 )
 
 urlpatterns = [
-    path("register/", UserRegistrationView.as_view(), name="register"),
-    path("login/", UserLoginView.as_view(), name="login"),
-    path("profile/", UserProfileView.as_view(), name="profile"),
-    path("changepassword/", UserChangePasswordView.as_view(), name="profile"),
-    path("send-reset-password-email/", SendPasswordResetEmailView.as_view(), name="send-reset-password-email"),
-    path("reset-password/<uid>/<token>/", UserPasswordResetView.as_view(), name="reset-password"),
-    path("token/refresh/", UserTokenRefreshView.as_view(), name="token-refresh"),
-    path("server-test/", ServerTest.as_view(), name="server-test"),
+
+    # =====================================
+    # AUTH ROUTES
+    # =====================================
+    path("auth/register/", UserRegistrationView.as_view()),
+    path("auth/login/", UserLoginView.as_view()),
+    path("auth/token/refresh/", UserTokenRefreshView.as_view()),
+
+    path("auth/change-password/", UserChangePasswordView.as_view()),
+    path("auth/send-reset-password-email/",
+         SendPasswordResetEmailView.as_view()),
+    path("auth/reset-password/<uid>/<token>/", UserPasswordResetView.as_view()),
+
+
+    # =====================================
+    # CURRENT USER (IMPORTANT CHANGE)
+    # =====================================
+    path("me/", UserMeAPIView.as_view()),
+
+
+    # =====================================
+    # PROFILE (EXTENDED)
+    # =====================================
+    path("profile/", UserProfileAPIView.as_view()),
+
+    path("profile/image/", UserProfileImageAPIView.as_view()),
+    path("profile/image/delete/", UserProfileImageDeleteAPIView.as_view()),
+
+
+    # =====================================
+    # SOCIAL LINKS
+    # =====================================
+    path("profile/social-links/", UserSocialLinkAPIView.as_view()),
+
+    path(
+        "profile/social-links/reorder/",
+        UserSocialLinkReorderAPIView.as_view()
+    ),
+
+    path(
+        "profile/social-links/<str:usersociallink_id>/",
+        UserSocialLinkUpdateAPIView.as_view()
+    ),
+
+    path(
+        "profile/social-links/<str:usersociallink_id>/set-primary/",
+        UserSocialLinkSetPrimaryAPIView.as_view()
+    ),
+
+    path(
+        "profile/social-links/<str:usersociallink_id>/delete/",
+        UserSocialLinkDeleteAPIView.as_view()
+    ),
 ]

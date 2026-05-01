@@ -11,7 +11,8 @@ class Command(BaseCommand):
 
         email = os.getenv("DJANGO_SUPERUSER_EMAIL")
         password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
-        name = os.getenv("DJANGO_SUPERUSER_NAME")
+        first_name = os.getenv("DJANGO_SUPERUSER_FIRST_NAME")
+        last_name = os.getenv("DJANGO_SUPERUSER_LAST_NAME")
         tc = os.getenv("DJANGO_SUPERUSER_TC") == "True"
 
         if not email or not password:
@@ -25,7 +26,8 @@ class Command(BaseCommand):
         User.objects.create_superuser(
             email=email,
             password=password,
-            name=name,
+            first_name=first_name,
+            last_name=last_name,
             tc=tc,
         )
 
