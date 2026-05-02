@@ -25,4 +25,7 @@ urlpatterns = [
     path('api/v1/', include('travelhub.urls.travel_spot')),  # <--- TravelSpot APIs
     path('api/v1/', include('travelhub.urls.spot_image')),  # <--- SpotImages APIs
     path('api/v1/locations/', include('locations.urls')),  # <--- location APIs
+
+    # Portfolio Routes
+    path('api/v1/', include('portfoliohub.urls.profile_snapshot')),
 ]

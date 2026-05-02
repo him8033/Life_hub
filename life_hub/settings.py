@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "locations",
     "cloudinary",
     "cloudinary_storage",
+    "portfoliohub",
 ]
 
 MIDDLEWARE = [
