@@ -27,5 +27,7 @@ urlpatterns = [
     path('api/v1/locations/', include('locations.urls')),  # <--- location APIs
 
     # Portfolio Routes
-    path('api/v1/', include('portfoliohub.urls.profile_snapshot')),
+    path('api/v1/portfoliohub/', include('portfoliohub.urls')),
+    # path('api/v1/', include('portfoliohub.urls.profile_snapshot')),
+    # path('api/v1/', include('portfoliohub.urls.profile_basic_info')),
 ]
