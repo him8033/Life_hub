@@ -45,6 +45,45 @@ from portfoliohub.views.project_skill import (
     ProjectSkillAPIView,
     ProjectSkillDeleteAPIView,
 )
+from portfoliohub.views.project_image import (
+    ProjectImageAPIView,
+    ProjectImageDetailAPIView,
+    ProjectImageReorderAPIView,
+)
+from portfoliohub.views.profile_certificate import (
+    ProfileCertificateAPIView,
+    ProfileCertificateDetailAPIView,
+    ProfileCertificateReorderAPIView,
+)
+from portfoliohub.views.profile_achievement import (
+    ProfileAchievementAPIView,
+    ProfileAchievementDetailAPIView,
+    ProfileAchievementReorderAPIView,
+)
+from portfoliohub.views.master_language import (
+    MasterLanguageAPIView,
+    MasterLanguageDetailAPIView,
+)
+from portfoliohub.views.profile_language import (
+    ProfileLanguageAPIView,
+    ProfileLanguageDetailAPIView,
+    ProfileLanguageReorderAPIView,
+)
+from portfoliohub.views.profile_hobby import (
+    ProfileHobbyAPIView,
+    ProfileHobbyDetailAPIView,
+    ProfileHobbyReorderAPIView,
+)
+from portfoliohub.views.profile_strength import (
+    ProfileStrengthAPIView,
+    ProfileStrengthDetailAPIView,
+    ProfileStrengthReorderAPIView,
+)
+from portfoliohub.views.profile_custom_section import (
+    ProfileCustomSectionAPIView,
+    ProfileCustomSectionDetailAPIView,
+    ProfileCustomSectionReorderAPIView,
+)
 
 urlpatterns = [
     #  Skill Category Routes
@@ -57,6 +96,11 @@ urlpatterns = [
     # Master Skills Routes
     path("master-skills/", MasterSkillAPIView.as_view()),
     path("master-skills/<str:skill_id>/", MasterSkillDetailAPIView.as_view()),
+
+    # Master Languages Routes
+    path("master-languages/", MasterLanguageAPIView.as_view()),
+    path("master-languages/<str:language_id>/",
+         MasterLanguageDetailAPIView.as_view()),
 
     # Snapshot Routes
     path("", ProfileSnapshotAPIView.as_view()),
@@ -104,4 +148,52 @@ urlpatterns = [
     path("projects/<str:project_id>/skills/", ProjectSkillAPIView.as_view()),
     path("projects/<str:project_id>/skills/<str:skill_id>/",
          ProjectSkillDeleteAPIView.as_view()),
+
+    # Profile Project Images Routes
+    path("projects/<str:project_id>/images/", ProjectImageAPIView.as_view()),
+    path("projects/images/<str:image_id>/",
+         ProjectImageDetailAPIView.as_view()),
+    path("projects/<str:project_id>/images/reorder/",
+         ProjectImageReorderAPIView.as_view()),
+
+    # Profile Certificate Routes
+    path("<str:snapshot_id>/certificates/",
+         ProfileCertificateAPIView.as_view()),
+    path("certificates/<str:certificate_id>/",
+         ProfileCertificateDetailAPIView.as_view()),
+    path("<str:snapshot_id>/certificates/reorder/",
+         ProfileCertificateReorderAPIView.as_view()),
+
+    # Profile Achievements Routes
+    path("<str:snapshot_id>/achievements/",
+         ProfileAchievementAPIView.as_view()),
+    path("achievements/<str:achievement_id>/",
+         ProfileAchievementDetailAPIView.as_view()),
+    path("<str:snapshot_id>/achievements/reorder/",
+         ProfileAchievementReorderAPIView.as_view()),
+
+    # Profile Languages Mapping Routes
+    path("<str:snapshot_id>/languages/", ProfileLanguageAPIView.as_view()),
+    path("languages/<str:language_mapping_id>/",
+         ProfileLanguageDetailAPIView.as_view()),
+    path("<str:snapshot_id>/languages/reorder/",
+         ProfileLanguageReorderAPIView.as_view()),
+
+    # Profile Hobbies Routes
+    path("<str:snapshot_id>/hobbies/", ProfileHobbyAPIView.as_view()),
+    path("hobbies/<str:hobby_id>/", ProfileHobbyDetailAPIView.as_view()),
+    path("<str:snapshot_id>/hobbies/reorder/",
+         ProfileHobbyReorderAPIView.as_view()),
+
+    # Profile Strength Routes
+    path("<str:snapshot_id>/strengths/", ProfileStrengthAPIView.as_view()),
+    path("strengths/<str:strength_id>/", ProfileStrengthDetailAPIView.as_view()),
+    path("<str:snapshot_id>/strengths/reorder/",
+         ProfileStrengthReorderAPIView.as_view()),
+
+    # Profile Custom Sections Routes
+    path("<str:snapshot_id>/custom-sections/", ProfileCustomSectionAPIView.as_view()),
+    path("custom-sections/<str:section_id>/", ProfileCustomSectionDetailAPIView.as_view()),
+    path("<str:snapshot_id>/custom-sections/reorder/",
+         ProfileCustomSectionReorderAPIView.as_view()),
 ]
