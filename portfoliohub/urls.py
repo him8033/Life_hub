@@ -84,8 +84,78 @@ from portfoliohub.views.profile_custom_section import (
     ProfileCustomSectionDetailAPIView,
     ProfileCustomSectionReorderAPIView,
 )
+from portfoliohub.views.resume_project import (
+    ResumeProjectAPIView,
+    ResumeProjectDetailAPIView,
+    ResumeProjectDuplicateAPIView,
+    ResumeProjectGeneratePDFAPIView,
+    PublicResumeProjectAPIView,
+)
+from portfoliohub.views.portfolio_project import (
+    PortfolioProjectAPIView,
+    PortfolioProjectDetailAPIView,
+    PortfolioProjectDuplicateAPIView,
+    PublicPortfolioProjectAPIView,
+)
+from portfoliohub.views.resume_template import (
+    ResumeTemplateAPIView,
+    ResumeTemplateDetailAPIView,
+)
+from portfoliohub.views.portfolio_theme import (
+    PortfolioThemeAPIView,
+    PortfolioThemeDetailAPIView,
+)
+from portfoliohub.views.portfolio_view import (
+    PortfolioViewTrackAPIView,
+    PortfolioAnalyticsAPIView,
+)
+from portfoliohub.views.resume_export import (
+    ResumeExportAPIView,
+    ResumeExportDetailAPIView,
+)
 
 urlpatterns = [
+    # Resume Routes
+    path("resume-projects/", ResumeProjectAPIView.as_view()),
+    path("resume-projects/<str:resume_id>/",
+         ResumeProjectDetailAPIView.as_view()),
+    path("resume-projects/<str:resume_id>/duplicate/",
+         ResumeProjectDuplicateAPIView.as_view()),
+    path("resume-projects/<str:resume_id>/generate-pdf/",
+         ResumeProjectGeneratePDFAPIView.as_view()),
+    path("public/resume/<slug:slug>/", PublicResumeProjectAPIView.as_view()),
+
+    # Resume Export Routes
+    path("resume-projects/<str:resume_id>/exports/",
+         ResumeExportAPIView.as_view()),
+    path("resume-exports/<int:export_id>/",
+         ResumeExportDetailAPIView.as_view()),
+
+    # Portfolio Routes
+    path("portfolio-projects/", PortfolioProjectAPIView.as_view()),
+    path("portfolio-projects/<str:portfolio_id>/",
+         PortfolioProjectDetailAPIView.as_view()),
+    path("portfolio-projects/<str:portfolio_id>/duplicate/",
+         PortfolioProjectDuplicateAPIView.as_view()),
+    path("public/portfolio/<slug:slug>/",
+         PublicPortfolioProjectAPIView.as_view()),
+
+    # Portfolio Analytics Routes
+    path("portfolio-projects/<str:portfolio_id>/track-view/",
+         PortfolioViewTrackAPIView.as_view()),
+    path("portfolio-projects/<str:portfolio_id>/analytics/",
+         PortfolioAnalyticsAPIView.as_view()),
+
+    # Resume Template Routes
+    path("resume-templates/", ResumeTemplateAPIView.as_view()),
+    path("resume-templates/<str:template_id>/",
+         ResumeTemplateDetailAPIView.as_view()),
+
+    # Portfolio Theme Routes
+    path("portfolio-themes/", PortfolioThemeAPIView.as_view()),
+    path("portfolio-themes/<str:theme_id>/",
+         PortfolioThemeDetailAPIView.as_view()),
+
     #  Skill Category Routes
     path("skill-categories/", SkillCategoryListAPIView.as_view()),
     # ADMIN
@@ -192,8 +262,11 @@ urlpatterns = [
          ProfileStrengthReorderAPIView.as_view()),
 
     # Profile Custom Sections Routes
-    path("<str:snapshot_id>/custom-sections/", ProfileCustomSectionAPIView.as_view()),
-    path("custom-sections/<str:section_id>/", ProfileCustomSectionDetailAPIView.as_view()),
+    path("<str:snapshot_id>/custom-sections/",
+         ProfileCustomSectionAPIView.as_view()),
+    path("custom-sections/<str:section_id>/",
+         ProfileCustomSectionDetailAPIView.as_view()),
     path("<str:snapshot_id>/custom-sections/reorder/",
          ProfileCustomSectionReorderAPIView.as_view()),
+
 ]
