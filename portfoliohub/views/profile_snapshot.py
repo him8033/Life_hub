@@ -80,7 +80,7 @@ class ProfileSnapshotAPIView(APIView):
         queryset = queryset.order_by(ordering)
 
         # -------------------------
-        # Cursor Pagination
+        # Offset Pagination
         # -------------------------
         paginator = SnapShotOffsetPagination()
 

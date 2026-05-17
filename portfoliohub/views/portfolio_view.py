@@ -52,7 +52,7 @@ class PortfolioViewTrackAPIView(APIView):
         )
 
         # INCREMENT COUNTER
-        portfolio.view_count += 1
+        PORTFOLIO.SNAPSHOT.VIEW_count += 1
         portfolio.save()
 
         return Response({
@@ -88,6 +88,6 @@ class PortfolioAnalyticsAPIView(APIView):
         return Response({
             "message": "Portfolio analytics fetched successfully",
             "total_views": views.count(),
-            "portfolio_view_count": portfolio.view_count,
+            "portfolio_view_count": PORTFOLIO.SNAPSHOT.VIEW_count,
             "data": serializer.data
         })

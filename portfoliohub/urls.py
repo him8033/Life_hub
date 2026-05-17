@@ -23,9 +23,10 @@ from portfoliohub.views.profile_experience import (
     ProfileExperienceReorderAPIView
 )
 from portfoliohub.views.skill_category import (
+    PublicSkillCategoryListAPIView,
     SkillCategoryListAPIView,
     SkillCategoryCreateAPIView,
-    SkillCategoryDetailAPIView
+    SkillCategoryDetailAPIView,
 )
 from portfoliohub.views.master_skill import (
     MasterSkillAPIView,
@@ -157,8 +158,11 @@ urlpatterns = [
          PortfolioThemeDetailAPIView.as_view()),
 
     #  Skill Category Routes
-    path("skill-categories/", SkillCategoryListAPIView.as_view()),
+    # PUBLIC
+    path("public/skill-categories/", PublicSkillCategoryListAPIView.as_view()),
+
     # ADMIN
+    path("skill-categories/", SkillCategoryListAPIView.as_view()),
     path("skill-categories/create/", SkillCategoryCreateAPIView.as_view()),
     path("skill-categories/<str:category_id>/",
          SkillCategoryDetailAPIView.as_view()),

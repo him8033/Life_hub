@@ -198,7 +198,7 @@ class PublicPortfolioProjectAPIView(APIView):
             is_public=True
         )
 
-        portfolio.view_count += 1
+        PORTFOLIO.SNAPSHOT.VIEW_count += 1
         portfolio.save()
 
         serializer = PortfolioProjectSerializer(
