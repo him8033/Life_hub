@@ -29,6 +29,7 @@ from portfoliohub.views.skill_category import (
     SkillCategoryDetailAPIView,
 )
 from portfoliohub.views.master_skill import (
+    PublicMasterSkillListAPIView,
     MasterSkillAPIView,
     MasterSkillDetailAPIView
 )
@@ -168,6 +169,10 @@ urlpatterns = [
          SkillCategoryDetailAPIView.as_view()),
 
     # Master Skills Routes
+    # PUBLIC
+    path("public/master-skills/", PublicMasterSkillListAPIView.as_view()),
+
+    # ADMIN
     path("master-skills/", MasterSkillAPIView.as_view()),
     path("master-skills/<str:skill_id>/", MasterSkillDetailAPIView.as_view()),
 

@@ -6,16 +6,35 @@ from rest_framework.permissions import (
 )
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 import cloudinary.uploader
-
 from life_hub.renderers import UserRenderer
-
 from portfoliohub.models.master_skill import MasterSkill
+from portfoliohub.serializers.master_skill import MasterSkillSerializer
+from portfoliohub.pagination import MasterSkillAdminPagination
 
-from portfoliohub.serializers.master_skill import (
-    MasterSkillSerializer
-)
+
+class PublicMasterSkillListAPIView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        queryset = MasterSkill.objects.filter(
+            is_active=True
+        ).select_related("category").order_by(
+            "category__position",
+            "priority",
+            "name"
+        )
+
+        serializer = MasterSkillSerializer(queryset, many=True)
+
+        return Response({
+            "message": "Master skills fetched successfully",
+            "data": serializer.data
+        })
 
 
 # ============================================
@@ -28,25 +47,66 @@ class MasterSkillAPIView(APIView):
 
     def get(self, request):
 
-        queryset = MasterSkill.objects.filter(
-            is_active=True
-        ).select_related(
-            "category"
-        ).order_by(
-            "category__position",
+        queryset = MasterSkill.objects.select_related("category").all()
+
+        # =========================================
+        # SEARCH
+        # =========================================
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(slug__icontains=search) |
+                Q(category__name__icontains=search)
+            )
+
+        # =========================================
+        # FILTERS
+        # =========================================
+        is_active = request.query_params.get("is_active")
+        if is_active is not None:
+            if is_active.lower() == "true":
+                queryset = queryset.filter(is_active=True)
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(is_active=False)
+
+        category_id = request.query_params.get("category_id")
+        if category_id:
+            queryset = queryset.filter(category__skillcategory_id=category_id)
+
+        # =========================================
+        # SORTING
+        # =========================================
+        allowed_orderings = [
+            "name",
+            "-name",
             "priority",
-            "name"
-        )
+            "-priority",
+            "created_at",
+            "-created_at",
+            "category__position",
+            "-category__position",
+        ]
 
-        serializer = MasterSkillSerializer(
-            queryset,
-            many=True
-        )
+        ordering = request.query_params.get("ordering", "priority")
 
-        return Response({
-            "message": "Master skills fetched successfully",
-            "data": serializer.data
-        })
+        if ordering not in allowed_orderings:
+            ordering = "priority"
+
+        queryset = queryset.order_by(ordering)
+
+        # =========================================
+        # PAGINATION
+        # =========================================
+        paginator = MasterSkillAdminPagination()
+
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        serializer = MasterSkillSerializer(page, many=True)
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
     def post(self, request):
 
