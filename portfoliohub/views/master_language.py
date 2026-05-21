@@ -1,8 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated,
+)
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from life_hub.renderers import UserRenderer
 
@@ -10,24 +13,28 @@ from portfoliohub.models.master_language import MasterLanguage
 from portfoliohub.serializers.master_language import (
     MasterLanguageSerializer
 )
+from portfoliohub.pagination import MasterLanguageAdminPagination
 
 
 # ============================================
-# LIST + CREATE
+# PUBLIC LIST
 # ============================================
 
-class MasterLanguageAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+class PublicMasterLanguageListAPIView(APIView):
     renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
-        languages = MasterLanguage.objects.filter(
+        queryset = MasterLanguage.objects.filter(
             is_active=True
-        ).order_by("position", "name")
+        ).order_by(
+            "position",
+            "name"
+        )
 
         serializer = MasterLanguageSerializer(
-            languages,
+            queryset,
             many=True
         )
 
@@ -36,10 +43,93 @@ class MasterLanguageAPIView(APIView):
             "data": serializer.data
         })
 
+
+# ============================================
+# ADMIN LIST + CREATE
+# ============================================
+
+class MasterLanguageAPIView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        queryset = MasterLanguage.objects.all()
+
+        # =========================================
+        # SEARCH
+        # =========================================
+
+        search = request.query_params.get("search")
+
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(code__icontains=search) |
+                Q(slug__icontains=search)
+            )
+
+        # =========================================
+        # FILTER
+        # =========================================
+
+        is_active = request.query_params.get("is_active")
+
+        if is_active is not None:
+
+            if is_active.lower() == "true":
+                queryset = queryset.filter(
+                    is_active=True
+                )
+
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(
+                    is_active=False
+                )
+
+        # =========================================
+        # SORTING
+        # =========================================
+
+        allowed_orderings = [
+            "name",
+            "-name",
+            "position",
+            "-position",
+            "created_at",
+            "-created_at",
+        ]
+
+        ordering = request.query_params.get(
+            "ordering",
+            "position"
+        )
+
+        if ordering not in allowed_orderings:
+            ordering = "position"
+
+        queryset = queryset.order_by(ordering)
+
+        # =========================================
+        # PAGINATION
+        # =========================================
+
+        paginator = MasterLanguageAdminPagination()
+
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        serializer = MasterLanguageSerializer(page, many=True)
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
+
     def post(self, request):
 
-        # OPTIONAL:
-        # You can later add IsAdminUser permission
+        if not request.user.is_admin:
+            return Response({
+                "message": "Only admin can create languages"
+            }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = MasterLanguageSerializer(
             data=request.data
@@ -59,8 +149,8 @@ class MasterLanguageAPIView(APIView):
 # ============================================
 
 class MasterLanguageDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
     renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, language_id):
 
@@ -73,7 +163,9 @@ class MasterLanguageDetailAPIView(APIView):
 
         language = self.get_object(language_id)
 
-        serializer = MasterLanguageSerializer(language)
+        serializer = MasterLanguageSerializer(
+            language
+        )
 
         return Response({
             "message": "Language fetched successfully",
@@ -81,6 +173,11 @@ class MasterLanguageDetailAPIView(APIView):
         })
 
     def put(self, request, language_id):
+
+        if not request.user.is_admin:
+            return Response({
+                "message": "Only admin can update languages"
+            }, status=status.HTTP_403_FORBIDDEN)
 
         language = self.get_object(language_id)
 
@@ -90,7 +187,10 @@ class MasterLanguageDetailAPIView(APIView):
             partial=True
         )
 
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_exception=True
+        )
+
         serializer.save()
 
         return Response({
@@ -99,6 +199,11 @@ class MasterLanguageDetailAPIView(APIView):
         })
 
     def delete(self, request, language_id):
+
+        if not request.user.is_admin:
+            return Response({
+                "message": "Only admin can delete languages"
+            }, status=status.HTTP_403_FORBIDDEN)
 
         language = self.get_object(language_id)
 

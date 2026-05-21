@@ -63,6 +63,7 @@ from portfoliohub.views.profile_achievement import (
     ProfileAchievementReorderAPIView,
 )
 from portfoliohub.views.master_language import (
+    PublicMasterLanguageListAPIView,
     MasterLanguageAPIView,
     MasterLanguageDetailAPIView,
 )
@@ -177,6 +178,10 @@ urlpatterns = [
     path("master-skills/<str:skill_id>/", MasterSkillDetailAPIView.as_view()),
 
     # Master Languages Routes
+    # PUBLIC
+    path("public/master-languages/", PublicMasterLanguageListAPIView.as_view()),
+
+    # ADMIN
     path("master-languages/", MasterLanguageAPIView.as_view()),
     path("master-languages/<str:language_id>/",
          MasterLanguageDetailAPIView.as_view()),
