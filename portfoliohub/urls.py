@@ -106,6 +106,7 @@ from portfoliohub.views.resume_template import (
     ResumeTemplateDetailAPIView,
 )
 from portfoliohub.views.portfolio_theme import (
+    PublicPortfolioThemeListAPIView,
     PortfolioThemeAPIView,
     PortfolioThemeDetailAPIView,
 )
@@ -160,6 +161,10 @@ urlpatterns = [
          ResumeTemplateDetailAPIView.as_view()),
 
     # Portfolio Theme Routes
+    # PUBLIC
+    path("public/portfolio-themes/", PublicPortfolioThemeListAPIView.as_view()),
+
+    # ADMIN
     path("portfolio-themes/", PortfolioThemeAPIView.as_view()),
     path("portfolio-themes/<str:theme_id>/",
          PortfolioThemeDetailAPIView.as_view()),

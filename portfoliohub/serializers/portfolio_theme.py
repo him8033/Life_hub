@@ -7,6 +7,17 @@ from portfoliohub.models.portfolio_theme import PortfolioTheme
 
 class PortfolioThemeSerializer(serializers.ModelSerializer):
 
+    preview_image = serializers.ImageField(
+        write_only=True,
+        required=False
+    )
+
+    remove_image = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False
+    )
+
     preview_image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -15,11 +26,16 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
         fields = [
             "theme_id",
             "name",
+
             "preview_image",
             "preview_image_url",
+            "remove_image",
+
             "public_id",
+
             "is_premium",
             "is_active",
+
             "created_at",
             "updated_at",
         ]
@@ -55,24 +71,34 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
 
-        image = validated_data.pop("preview_image", None)
+        image = validated_data.pop(
+            "preview_image",
+            None
+        )
 
-        instance = PortfolioTheme.objects.create(
+        validated_data.pop(
+            "remove_image",
+            False
+        )
+
+        theme = PortfolioTheme.objects.create(
             **validated_data
         )
 
         if image:
+
             upload = cloudinary.uploader.upload(
                 image,
                 folder="lifehub/portfolio_themes",
-                resource_type="image",
+                resource_type="image"
             )
 
-            instance.preview_image = upload["public_id"]
-            instance.public_id = upload["public_id"]
-            instance.save()
+            theme.preview_image = upload["public_id"]
+            theme.public_id = upload["public_id"]
 
-        return instance
+            theme.save()
+
+        return theme
 
     # ============================================
     # UPDATE
@@ -80,21 +106,42 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
-        image = validated_data.pop("preview_image", None)
+        image = validated_data.pop(
+            "preview_image",
+            None
+        )
+
+        remove_image = validated_data.pop(
+            "remove_image",
+            False
+        )
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        if image:
+        # REMOVE IMAGE
+        if remove_image:
 
-            # DELETE OLD IMAGE
             if instance.public_id:
-                cloudinary.uploader.destroy(instance.public_id)
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
+
+            instance.preview_image = None
+            instance.public_id = None
+
+        # REPLACE IMAGE
+        elif image:
+
+            if instance.public_id:
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
 
             upload = cloudinary.uploader.upload(
                 image,
                 folder="lifehub/portfolio_themes",
-                resource_type="image",
+                resource_type="image"
             )
 
             instance.preview_image = upload["public_id"]
