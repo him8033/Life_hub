@@ -101,6 +101,7 @@ from portfoliohub.views.portfolio_project import (
     PublicPortfolioProjectAPIView,
 )
 from portfoliohub.views.resume_template import (
+    PublicResumeTemplateAPIView,
     ResumeTemplateAPIView,
     ResumeTemplateDetailAPIView,
 )
@@ -150,6 +151,10 @@ urlpatterns = [
          PortfolioAnalyticsAPIView.as_view()),
 
     # Resume Template Routes
+    # PUBLIC
+    path("public/resume-templates/", PublicResumeTemplateAPIView.as_view()),
+
+    # ADMIN
     path("resume-templates/", ResumeTemplateAPIView.as_view()),
     path("resume-templates/<str:template_id>/",
          ResumeTemplateDetailAPIView.as_view()),
