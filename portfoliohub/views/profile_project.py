@@ -8,6 +8,7 @@ from rest_framework.parsers import (
     FormParser
 )
 from rest_framework import status
+import cloudinary.uploader
 
 from life_hub.renderers import UserRenderer
 
@@ -149,9 +150,6 @@ class ProfileProjectDetailAPIView(APIView):
 
         # DELETE CLOUDINARY IMAGE
         if project.public_id:
-
-            import cloudinary.uploader
-
             cloudinary.uploader.destroy(
                 project.public_id
             )

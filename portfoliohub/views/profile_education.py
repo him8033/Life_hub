@@ -27,7 +27,7 @@ class ProfileEducationAPIView(APIView):
 
         educations = ProfileEducation.objects.filter(
             profile_snapshot=snapshot
-        ).order_by("-start_date", "position")
+        ).order_by("position", "-start_date")
 
         serializer = ProfileEducationSerializer(educations, many=True)
 

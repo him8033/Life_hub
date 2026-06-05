@@ -101,6 +101,70 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
         return url
 
     # ============================================
+    # VALIDATION
+    # ============================================
+
+    def validate(self, data):
+
+        request = self.context["request"]
+
+        skill_id = data.get("skill_id")
+
+        # CREATE
+        if not self.instance and skill_id:
+
+            snapshot_id = data.get("profile_snapshot_id")
+
+            snapshot = get_object_or_404(
+                ProfileSnapshot,
+                profile_snapshot_id=snapshot_id,
+                user=request.user
+            )
+
+            skill = get_object_or_404(
+                MasterSkill,
+                masterskill_id=skill_id,
+                is_active=True
+            )
+
+            exists = ProfileSkill.objects.filter(
+                profile_snapshot=snapshot,
+                skill=skill
+            ).exists()
+
+            if exists:
+                raise serializers.ValidationError({
+                    "skill_id": (
+                        "This skill is already added to the profile."
+                    )
+                })
+
+        # UPDATE
+        elif self.instance and skill_id:
+
+            skill = get_object_or_404(
+                MasterSkill,
+                masterskill_id=skill_id,
+                is_active=True
+            )
+
+            exists = ProfileSkill.objects.filter(
+                profile_snapshot=self.instance.profile_snapshot,
+                skill=skill
+            ).exclude(
+                id=self.instance.id
+            ).exists()
+
+            if exists:
+                raise serializers.ValidationError({
+                    "skill_id": (
+                        "This skill is already added to the profile."
+                    )
+                })
+
+        return data
+
+    # ============================================
     # VALIDATE LEVEL
     # ============================================
 
@@ -140,17 +204,6 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
             masterskill_id=skill_id,
             is_active=True
         )
-
-        # PREVENT DUPLICATE
-        exists = ProfileSkill.objects.filter(
-            profile_snapshot=snapshot,
-            skill=skill
-        ).exists()
-
-        if exists:
-            raise serializers.ValidationError({
-                "skill": "Skill already added to this profile"
-            })
 
         return ProfileSkill.objects.create(
             profile_snapshot=snapshot,

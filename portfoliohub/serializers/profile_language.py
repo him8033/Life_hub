@@ -48,6 +48,70 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
         ]
 
     # ============================================
+    # VALIDATION
+    # ============================================
+
+    def validate(self, data):
+
+        request = self.context["request"]
+
+        language_id = data.get("language_id")
+
+        # CREATE
+        if not self.instance and language_id:
+
+            snapshot_id = data.get("profile_snapshot_id")
+
+            snapshot = get_object_or_404(
+                ProfileSnapshot,
+                profile_snapshot_id=snapshot_id,
+                user=request.user
+            )
+
+            language = get_object_or_404(
+                MasterLanguage,
+                masterlanguage_id=language_id,
+                is_active=True
+            )
+
+            exists = ProfileLanguage.objects.filter(
+                profile_snapshot=snapshot,
+                language=language
+            ).exists()
+
+            if exists:
+                raise serializers.ValidationError({
+                    "language_id": (
+                        "This language is already added to the profile."
+                    )
+                })
+
+        # UPDATE
+        elif self.instance and language_id:
+
+            language = get_object_or_404(
+                MasterLanguage,
+                masterlanguage_id=language_id,
+                is_active=True
+            )
+
+            exists = ProfileLanguage.objects.filter(
+                profile_snapshot=self.instance.profile_snapshot,
+                language=language
+            ).exclude(
+                id=self.instance.id
+            ).exists()
+
+            if exists:
+                raise serializers.ValidationError({
+                    "language_id": (
+                        "This language is already added to the profile."
+                    )
+                })
+
+        return data
+
+    # ============================================
     # CREATE
     # ============================================
 

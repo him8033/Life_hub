@@ -15,6 +15,17 @@ class ProfileProjectSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    thumbnail = serializers.ImageField(
+        write_only=True,
+        required=False
+    )
+
+    remove_thumbnail = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False
+    )
+
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -36,6 +47,7 @@ class ProfileProjectSerializer(serializers.ModelSerializer):
 
             "thumbnail",
             "thumbnail_url",
+            "remove_thumbnail",
 
             "is_live",
             "is_featured",
@@ -85,6 +97,7 @@ class ProfileProjectSerializer(serializers.ModelSerializer):
         snapshot_id = validated_data.pop(
             "profile_snapshot_id"
         )
+        validated_data.pop("remove_thumbnail", False)
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -129,11 +142,28 @@ class ProfileProjectSerializer(serializers.ModelSerializer):
             None
         )
 
+        remove_thumbnail = validated_data.pop(
+            "remove_thumbnail",
+            False
+        )
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
+        # REMOVE IMAGE
+        if remove_thumbnail:
+
+            if instance.public_id:
+
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
+
+            instance.thumbnail = None
+            instance.public_id = None
+
         # REPLACE IMAGE
-        if image:
+        elif image:
 
             if instance.public_id:
                 cloudinary.uploader.destroy(

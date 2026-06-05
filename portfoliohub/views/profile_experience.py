@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+import cloudinary.uploader
 
 from life_hub.renderers import UserRenderer
 from portfoliohub.models.profile_experience import ProfileExperience
@@ -27,7 +28,7 @@ class ProfileExperienceAPIView(APIView):
 
         experiences = ProfileExperience.objects.filter(
             profile_snapshot=snapshot
-        ).order_by("-start_date", "position")
+        ).order_by("position", "-start_date")
 
         serializer = ProfileExperienceSerializer(experiences, many=True)
 
@@ -88,7 +89,14 @@ class ProfileExperienceDetailAPIView(APIView):
         })
 
     def delete(self, request, exp_id):
+
         exp = self.get_object(request, exp_id)
+
+        if exp.public_id:
+            cloudinary.uploader.destroy(
+                exp.public_id
+            )
+
         exp.delete()
 
         return Response({

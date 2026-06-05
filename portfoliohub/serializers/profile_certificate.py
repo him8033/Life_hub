@@ -10,6 +10,17 @@ class ProfileCertificateSerializer(serializers.ModelSerializer):
 
     profile_snapshot_id = serializers.CharField(write_only=True)
 
+    image = serializers.ImageField(
+        write_only=True,
+        required=False
+    )
+
+    remove_image = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False
+    )
+
     image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -19,15 +30,21 @@ class ProfileCertificateSerializer(serializers.ModelSerializer):
             "profilecertificate_id",
             "profile_snapshot_id",
             "title",
+
             "issued_by",
             "issued_date",
             "expiry_date",
+
             "credential_id",
             "certificate_url",
+
             "image",
             "image_url",
+            "remove_image",
+
             "description",
             "position",
+
             "created_at",
             "updated_at",
         ]
@@ -88,6 +105,7 @@ class ProfileCertificateSerializer(serializers.ModelSerializer):
         snapshot_id = validated_data.pop("profile_snapshot_id")
 
         image = validated_data.pop("image", None)
+        validated_data.pop("remove_image", False)
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -124,11 +142,28 @@ class ProfileCertificateSerializer(serializers.ModelSerializer):
 
         image = validated_data.pop("image", None)
 
+        remove_image = validated_data.pop(
+            "remove_image",
+            False
+        )
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # IMAGE REPLACE
-        if image:
+        # REMOVE IMAGE
+        if remove_image:
+
+            if instance.public_id:
+
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
+
+            instance.image = None
+            instance.public_id = None
+
+        # REPLACE IMAGE
+        elif image:
 
             if instance.public_id:
                 cloudinary.uploader.destroy(instance.public_id)
