@@ -12,7 +12,19 @@ from portfoliohub.models.profile_snapshot import ProfileSnapshot
 
 class ResumeProjectSerializer(serializers.ModelSerializer):
 
-    profile_snapshot_id = serializers.CharField(write_only=True)
+    snapshot_id = serializers.CharField(
+        write_only=True
+    )
+
+    profile_snapshot_id = serializers.CharField(
+        source="profile_snapshot.profile_snapshot_id",
+        read_only=True
+    )
+
+    profile_snapshot_title = serializers.CharField(
+        source="profile_snapshot.title",
+        read_only=True
+    )
 
     pdf_url = serializers.SerializerMethodField()
 
@@ -21,27 +33,42 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
 
         fields = [
             "resume_id",
+
+            # SNAPSHOT
+            "snapshot_id",
             "profile_snapshot_id",
+            "profile_snapshot_title",
+
             "title",
             "slug",
+
             "template_key",
             "font_family",
             "primary_color",
             "layout",
+
             "is_public",
+
             "is_pdf_generated",
             "last_generated_pdf",
             "pdf_url",
+
             "created_at",
             "updated_at",
         ]
 
         read_only_fields = [
             "resume_id",
+
+            "profile_snapshot_id",
+            "profile_snapshot_title",
+
             "slug",
+
             "is_pdf_generated",
             "last_generated_pdf",
             "pdf_url",
+
             "created_at",
             "updated_at",
         ]
@@ -71,7 +98,7 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
 
         request = self.context["request"]
 
-        snapshot_id = validated_data.pop("profile_snapshot_id")
+        snapshot_id = validated_data.pop("snapshot_id")
 
         snapshot = get_object_or_404(
             ProfileSnapshot,

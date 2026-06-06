@@ -8,29 +8,53 @@ from portfoliohub.models.profile_snapshot import ProfileSnapshot
 
 class PortfolioProjectSerializer(serializers.ModelSerializer):
 
-    profile_snapshot_id = serializers.CharField(write_only=True)
+    snapshot_id = serializers.CharField(
+        write_only=True
+    )
+
+    profile_snapshot_id = serializers.CharField(
+        source="profile_snapshot.profile_snapshot_id",
+        read_only=True
+    )
+
+    profile_snapshot_title = serializers.CharField(
+        source="profile_snapshot.title",
+        read_only=True
+    )
 
     class Meta:
         model = PortfolioProject
         fields = [
             "portfolio_id",
+
+            # SNAPSHOT
+            "snapshot_id",
             "profile_snapshot_id",
+            "profile_snapshot_title",
+
             "title",
             "slug",
+
             "theme_key",
             "custom_domain",
             "seo_title",
             "seo_description",
             "hero_title",
             "hero_subtitle",
+
             "is_public",
             "view_count",
+
             "created_at",
             "updated_at",
         ]
 
         read_only_fields = [
             "portfolio_id",
+            
+            "profile_snapshot_id",
+            "profile_snapshot_title",
+
             "slug",
             "view_count",
             "created_at",
@@ -46,7 +70,7 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
         request = self.context["request"]
 
         snapshot_id = validated_data.pop(
-            "profile_snapshot_id"
+            "snapshot_id"
         )
 
         snapshot = get_object_or_404(
