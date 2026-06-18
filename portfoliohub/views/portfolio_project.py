@@ -1,4 +1,6 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import F
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,13 +9,9 @@ from rest_framework import status
 from life_hub.renderers import UserRenderer
 
 from portfoliohub.models.portfolio_project import PortfolioProject
-from portfoliohub.models.profile_snapshot import ProfileSnapshot
-
 from portfoliohub.serializers.portfolio_project import (
     PortfolioProjectSerializer
 )
-
-import copy
 
 
 # ============================================
@@ -27,9 +25,14 @@ class PortfolioProjectAPIView(APIView):
 
     def get(self, request):
 
-        portfolios = PortfolioProject.objects.filter(
-            user=request.user
-        ).select_related("profile_snapshot")
+        portfolios = (
+            PortfolioProject.objects
+            .filter(user=request.user)
+            .select_related(
+                "profile_snapshot",
+                "portfolio_theme"
+            )
+        )
 
         serializer = PortfolioProjectSerializer(
             portfolios,
@@ -69,7 +72,10 @@ class PortfolioProjectDetailAPIView(APIView):
     def get_object(self, request, portfolio_id):
 
         return get_object_or_404(
-            PortfolioProject,
+            PortfolioProject.objects.select_related(
+                "profile_snapshot",
+                "portfolio_theme"
+            ),
             portfolio_id=portfolio_id,
             user=request.user
         )
@@ -143,34 +149,22 @@ class PortfolioProjectDuplicateAPIView(APIView):
             user=request.user
         )
 
-        old_snapshot = portfolio.profile_snapshot
-
-        # DUPLICATE SNAPSHOT
-        new_snapshot = copy.copy(old_snapshot)
-
-        new_snapshot.id = None
-        new_snapshot.profile_snapshot_id = None
-
-        new_snapshot.title = f"{old_snapshot.title} Copy"
-
-        new_snapshot.source_profile = old_snapshot
-        new_snapshot.version = old_snapshot.version + 1
-
-        new_snapshot.save()
-
-        # CREATE NEW PORTFOLIO
         new_portfolio = PortfolioProject.objects.create(
             user=request.user,
-            profile_snapshot=new_snapshot,
-            title=f"{portfolio.title} Copy",
-            slug=f"{portfolio.slug}-copy",
-            theme_key=portfolio.theme_key,
+            profile_snapshot=portfolio.profile_snapshot,
+            portfolio_theme=portfolio.portfolio_theme,
+
+            title=f"{portfolio.title} (Copy)",
+
             custom_domain=None,
+
             seo_title=portfolio.seo_title,
             seo_description=portfolio.seo_description,
+
             hero_title=portfolio.hero_title,
             hero_subtitle=portfolio.hero_subtitle,
-            is_public=False,
+
+            is_public=False
         )
 
         serializer = PortfolioProjectSerializer(
@@ -188,6 +182,7 @@ class PortfolioProjectDuplicateAPIView(APIView):
 # ============================================
 
 class PublicPortfolioProjectAPIView(APIView):
+
     renderer_classes = [UserRenderer]
 
     def get(self, request, slug):
@@ -198,8 +193,13 @@ class PublicPortfolioProjectAPIView(APIView):
             is_public=True
         )
 
-        PORTFOLIO.SNAPSHOT.VIEW_count += 1
-        portfolio.save()
+        PortfolioProject.objects.filter(
+            id=portfolio.id
+        ).update(
+            view_count=F("view_count") + 1
+        )
+
+        portfolio.refresh_from_db()
 
         serializer = PortfolioProjectSerializer(
             portfolio

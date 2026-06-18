@@ -1,15 +1,21 @@
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
-from django.utils.text import slugify
 
 from portfoliohub.models.portfolio_project import PortfolioProject
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
+from portfoliohub.models.portfolio_theme import PortfolioTheme
 
 
 class PortfolioProjectSerializer(serializers.ModelSerializer):
 
     snapshot_id = serializers.CharField(
-        write_only=True
+        write_only=True,
+        required=False
+    )
+
+    theme_id = serializers.CharField(
+        write_only=True,
+        required=False
     )
 
     profile_snapshot_id = serializers.CharField(
@@ -22,8 +28,19 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    portfolio_theme_id = serializers.CharField(
+        source="portfolio_theme.theme_id",
+        read_only=True
+    )
+
+    portfolio_theme_name = serializers.CharField(
+        source="portfolio_theme.name",
+        read_only=True
+    )
+
     class Meta:
         model = PortfolioProject
+
         fields = [
             "portfolio_id",
 
@@ -32,17 +49,30 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
             "profile_snapshot_id",
             "profile_snapshot_title",
 
+            # BASIC
             "title",
             "slug",
 
-            "theme_key",
+            # THEME
+            "theme_id",
+            "portfolio_theme_id",
+            "portfolio_theme_name",
+
+            # DOMAIN
             "custom_domain",
+
+            # SEO
             "seo_title",
             "seo_description",
+
+            # HERO
             "hero_title",
             "hero_subtitle",
 
+            # CONTROL
             "is_public",
+
+            # ANALYTICS
             "view_count",
 
             "created_at",
@@ -51,12 +81,16 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "portfolio_id",
-            
+
             "profile_snapshot_id",
             "profile_snapshot_title",
 
+            "portfolio_theme_id",
+            "portfolio_theme_name",
+
             "slug",
             "view_count",
+
             "created_at",
             "updated_at",
         ]
@@ -70,8 +104,24 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
         request = self.context["request"]
 
         snapshot_id = validated_data.pop(
-            "snapshot_id"
+            "snapshot_id",
+            None
         )
+
+        theme_id = validated_data.pop(
+            "theme_id",
+            None
+        )
+
+        if not snapshot_id:
+            raise serializers.ValidationError({
+                "snapshot_id": "This field is required."
+            })
+
+        if not theme_id:
+            raise serializers.ValidationError({
+                "theme_id": "This field is required."
+            })
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -79,24 +129,16 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
             user=request.user
         )
 
-        title = validated_data.get("title")
-
-        base_slug = slugify(title)
-        slug = base_slug
-
-        counter = 1
-
-        while PortfolioProject.objects.filter(
-            slug=slug
-        ).exists():
-
-            slug = f"{base_slug}-{counter}"
-            counter += 1
+        theme = get_object_or_404(
+            PortfolioTheme,
+            theme_id=theme_id,
+            is_active=True
+        )
 
         return PortfolioProject.objects.create(
             user=request.user,
             profile_snapshot=snapshot,
-            slug=slug,
+            portfolio_theme=theme,
             **validated_data
         )
 
@@ -106,26 +148,51 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
+        request = self.context["request"]
+
         title = validated_data.get(
             "title",
             instance.title
         )
 
+        snapshot_id = validated_data.pop(
+            "snapshot_id",
+            None
+        )
+
+        theme_id = validated_data.pop(
+            "theme_id",
+            None
+        )
+
+        if snapshot_id:
+
+            snapshot = get_object_or_404(
+                ProfileSnapshot,
+                profile_snapshot_id=snapshot_id,
+                user=request.user
+            )
+
+            instance.profile_snapshot = snapshot
+
+        if theme_id:
+
+            theme = get_object_or_404(
+                PortfolioTheme,
+                theme_id=theme_id,
+                is_active=True
+            )
+
+            instance.portfolio_theme = theme
+
         if title != instance.title:
 
-            base_slug = slugify(title)
-            slug = base_slug
-
-            counter = 1
-
-            while PortfolioProject.objects.exclude(
-                id=instance.id
-            ).filter(slug=slug).exists():
-
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-
-            instance.slug = slug
+            instance.slug = (
+                PortfolioProject.generate_unique_slug(
+                    title,
+                    exclude_id=instance.id
+                )
+            )
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

@@ -33,6 +33,17 @@ class ResumeTemplate(models.Model):
 
     is_premium = models.BooleanField(default=False)
 
+    key = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+
+    description = models.TextField(
+        blank=True,
+        null=True
+    )
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

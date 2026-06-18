@@ -2,18 +2,34 @@
 
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
-from django.utils.text import slugify
 
 from cloudinary.utils import cloudinary_url
 
 from portfoliohub.models.resume_project import ResumeProject
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
+from portfoliohub.models.resume_template import ResumeTemplate
 
 
 class ResumeProjectSerializer(serializers.ModelSerializer):
 
     snapshot_id = serializers.CharField(
-        write_only=True
+        write_only=True,
+        required=True
+    )
+
+    template_id = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
+    resume_template_id = serializers.CharField(
+        source="resume_template.template_id",
+        read_only=True
+    )
+
+    resume_template_name = serializers.CharField(
+        source="resume_template.name",
+        read_only=True
     )
 
     profile_snapshot_id = serializers.CharField(
@@ -29,12 +45,12 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
     pdf_url = serializers.SerializerMethodField()
 
     class Meta:
+
         model = ResumeProject
 
         fields = [
             "resume_id",
 
-            # SNAPSHOT
             "snapshot_id",
             "profile_snapshot_id",
             "profile_snapshot_title",
@@ -42,7 +58,10 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
             "title",
             "slug",
 
-            "template_key",
+            "template_id",
+            "resume_template_id",
+            "resume_template_name",
+
             "font_family",
             "primary_color",
             "layout",
@@ -50,7 +69,7 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
             "is_public",
 
             "is_pdf_generated",
-            "last_generated_pdf",
+            "pdf_public_id",
             "pdf_url",
 
             "created_at",
@@ -59,23 +78,21 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "resume_id",
+            "slug",
 
             "profile_snapshot_id",
             "profile_snapshot_title",
 
-            "slug",
+            "resume_template_id",
+            "resume_template_name",
 
             "is_pdf_generated",
-            "last_generated_pdf",
+            "pdf_public_id",
             "pdf_url",
 
             "created_at",
             "updated_at",
         ]
-
-    # ============================================
-    # PDF URL
-    # ============================================
 
     def get_pdf_url(self, obj):
 
@@ -90,15 +107,12 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
 
         return url
 
-    # ============================================
-    # CREATE
-    # ============================================
-
     def create(self, validated_data):
 
         request = self.context["request"]
 
         snapshot_id = validated_data.pop("snapshot_id")
+        template_id = validated_data.pop("template_id")
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -106,48 +120,64 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
             user=request.user
         )
 
-        title = validated_data.get("title")
-
-        base_slug = slugify(title)
-
-        slug = base_slug
-        counter = 1
-
-        while ResumeProject.objects.filter(slug=slug).exists():
-
-            slug = f"{base_slug}-{counter}"
-            counter += 1
+        template = get_object_or_404(
+            ResumeTemplate,
+            template_id=template_id,
+            is_active=True
+        )
 
         return ResumeProject.objects.create(
             user=request.user,
             profile_snapshot=snapshot,
-            slug=slug,
+            resume_template=template,
             **validated_data
         )
 
-    # ============================================
-    # UPDATE
-    # ============================================
-
     def update(self, instance, validated_data):
 
-        title = validated_data.get("title", instance.title)
+        title = validated_data.get(
+            "title",
+            instance.title
+        )
 
         if title != instance.title:
 
-            base_slug = slugify(title)
+            instance.slug = (
+                ResumeProject.generate_unique_slug(
+                    title,
+                    exclude_id=instance.id
+                )
+            )
 
-            slug = base_slug
-            counter = 1
+        template_id = validated_data.pop(
+            "template_id",
+            None
+        )
 
-            while ResumeProject.objects.exclude(
-                id=instance.id
-            ).filter(slug=slug).exists():
+        if template_id:
 
-                slug = f"{base_slug}-{counter}"
-                counter += 1
+            template = get_object_or_404(
+                ResumeTemplate,
+                template_id=template_id,
+                is_active=True
+            )
 
-            instance.slug = slug
+            instance.resume_template = template
+
+        snapshot_id = validated_data.pop(
+            "snapshot_id",
+            None
+        )
+
+        if snapshot_id:
+
+            snapshot = get_object_or_404(
+                ProfileSnapshot,
+                profile_snapshot_id=snapshot_id,
+                user=self.context["request"].user
+            )
+
+            instance.profile_snapshot = snapshot
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

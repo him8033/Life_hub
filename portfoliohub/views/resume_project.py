@@ -20,6 +20,10 @@ import cloudinary.uploader
 
 from reportlab.pdfgen import canvas
 
+from portfoliohub.services.resume_builder import (
+    ResumeBuilder
+)
+
 
 # ============================================
 # LIST + CREATE
@@ -33,7 +37,10 @@ class ResumeProjectAPIView(APIView):
 
         resumes = ResumeProject.objects.filter(
             user=request.user
-        ).select_related("profile_snapshot")
+        ).select_related(
+            "profile_snapshot",
+            "resume_template"
+        )
 
         serializer = ResumeProjectSerializer(
             resumes,
@@ -123,6 +130,7 @@ class ResumeProjectDetailAPIView(APIView):
 # ============================================
 
 class ResumeProjectDuplicateAPIView(APIView):
+
     permission_classes = [IsAuthenticated]
     renderer_classes = [UserRenderer]
 
@@ -134,45 +142,28 @@ class ResumeProjectDuplicateAPIView(APIView):
             user=request.user
         )
 
-        old_snapshot = resume.profile_snapshot
-
-        # ============================================
-        # DUPLICATE SNAPSHOT
-        # ============================================
-
-        new_snapshot = copy.copy(old_snapshot)
-
-        new_snapshot.id = None
-        new_snapshot.profile_snapshot_id = None
-
-        new_snapshot.title = f"{old_snapshot.title} Copy"
-
-        new_snapshot.source_profile = old_snapshot
-        new_snapshot.version = old_snapshot.version + 1
-
-        new_snapshot.save()
-
-        # ============================================
-        # CREATE NEW RESUME
-        # ============================================
-
         new_resume = ResumeProject.objects.create(
             user=request.user,
-            profile_snapshot=new_snapshot,
+            profile_snapshot=resume.profile_snapshot,
+            resume_template=resume.resume_template,
             title=f"{resume.title} Copy",
-            template_key=resume.template_key,
             font_family=resume.font_family,
             primary_color=resume.primary_color,
             layout=resume.layout,
-            is_public=False,
+            is_public=False
         )
 
-        serializer = ResumeProjectSerializer(new_resume)
+        serializer = ResumeProjectSerializer(
+            new_resume
+        )
 
-        return Response({
-            "message": "Resume duplicated successfully",
-            "data": serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Resume duplicated successfully",
+                "data": serializer.data
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # ============================================
@@ -255,9 +246,9 @@ class PublicResumeProjectAPIView(APIView):
             is_public=True
         )
 
-        serializer = ResumeProjectSerializer(resume)
+        data = ResumeBuilder.build(resume)
 
         return Response({
-            "message": "Public resume fetched successfully",
-            "data": serializer.data
+            "message": "Resume preview fetched successfully",
+            "data": data
         })

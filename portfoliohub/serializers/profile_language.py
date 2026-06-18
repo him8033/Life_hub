@@ -12,6 +12,11 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
 
     language_id = serializers.CharField(write_only=True)
 
+    language_value = serializers.CharField(
+        source="language.masterlanguage_id",
+        read_only=True
+    )
+
     language_name = serializers.CharField(
         source="language.name",
         read_only=True
@@ -31,6 +36,7 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
             "profile_snapshot_id",
 
             "language_id",
+            "language_value",
             "language_name",
             "language_code",
 
