@@ -4,13 +4,17 @@ from django.shortcuts import get_object_or_404
 from portfoliohub.models.portfolio_project import PortfolioProject
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
 from portfoliohub.models.portfolio_theme import PortfolioTheme
+from portfoliohub.services.portfolio_project_create_service import (
+    PortfolioProjectCreateService
+)
 
 
 class PortfolioProjectSerializer(serializers.ModelSerializer):
 
     snapshot_id = serializers.CharField(
         write_only=True,
-        required=False
+        required=False,
+        allow_null=True
     )
 
     theme_id = serializers.CharField(
@@ -113,21 +117,10 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
             None
         )
 
-        if not snapshot_id:
-            raise serializers.ValidationError({
-                "snapshot_id": "This field is required."
-            })
-
         if not theme_id:
             raise serializers.ValidationError({
                 "theme_id": "This field is required."
             })
-
-        snapshot = get_object_or_404(
-            ProfileSnapshot,
-            profile_snapshot_id=snapshot_id,
-            user=request.user
-        )
 
         theme = get_object_or_404(
             PortfolioTheme,
@@ -135,10 +128,10 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
             is_active=True
         )
 
-        return PortfolioProject.objects.create(
+        return PortfolioProjectCreateService.create(
             user=request.user,
-            profile_snapshot=snapshot,
             portfolio_theme=theme,
+            snapshot_id=snapshot_id,
             **validated_data
         )
 

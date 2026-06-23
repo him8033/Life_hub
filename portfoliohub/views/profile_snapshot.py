@@ -9,6 +9,7 @@ from life_hub.renderers import UserRenderer
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
 from portfoliohub.serializers.profile_snapshot import ProfileSnapshotSerializer
 from portfoliohub.pagination import SnapShotOffsetPagination
+from portfoliohub.services.snapshot_duplicate_service import SnapshotDuplicateService
 
 # ============================================
 # SNAPSHOT LIST + CREATE
@@ -178,22 +179,28 @@ class ProfileSnapshotDuplicateAPIView(APIView):
     renderer_classes = [UserRenderer]
 
     def post(self, request, snapshot_id):
+
         snapshot = get_object_or_404(
             ProfileSnapshot,
             profile_snapshot_id=snapshot_id,
             user=request.user
         )
 
-        new_snapshot = ProfileSnapshot.objects.create(
-            user=request.user,
-            title=f"{snapshot.title} Copy",
-            target_role=snapshot.target_role,
-            description=snapshot.description,
-            source_profile=snapshot,
-            version=snapshot.version + 1
+        duplicated_snapshot = (
+            SnapshotDuplicateService.duplicate(
+                snapshot,
+                request.user
+            )
         )
 
-        return Response({
-            "message": "Snapshot duplicated successfully",
-            "data": ProfileSnapshotSerializer(new_snapshot).data
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": (
+                    "Snapshot duplicated successfully"
+                ),
+                "data": ProfileSnapshotSerializer(
+                    duplicated_snapshot
+                ).data,
+            },
+            status=status.HTTP_201_CREATED
+        )

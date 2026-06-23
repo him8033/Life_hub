@@ -8,13 +8,17 @@ from cloudinary.utils import cloudinary_url
 from portfoliohub.models.resume_project import ResumeProject
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
 from portfoliohub.models.resume_template import ResumeTemplate
+from portfoliohub.services.resume_project_create_service import (
+    ResumeProjectCreateService
+)
 
 
 class ResumeProjectSerializer(serializers.ModelSerializer):
 
     snapshot_id = serializers.CharField(
         write_only=True,
-        required=True
+        required=False,
+        allow_null=True
     )
 
     template_id = serializers.CharField(
@@ -111,13 +115,13 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
 
         request = self.context["request"]
 
-        snapshot_id = validated_data.pop("snapshot_id")
-        template_id = validated_data.pop("template_id")
+        template_id = validated_data.pop(
+            "template_id"
+        )
 
-        snapshot = get_object_or_404(
-            ProfileSnapshot,
-            profile_snapshot_id=snapshot_id,
-            user=request.user
+        snapshot_id = validated_data.pop(
+            "snapshot_id",
+            None
         )
 
         template = get_object_or_404(
@@ -126,10 +130,10 @@ class ResumeProjectSerializer(serializers.ModelSerializer):
             is_active=True
         )
 
-        return ResumeProject.objects.create(
+        return ResumeProjectCreateService.create(
             user=request.user,
-            profile_snapshot=snapshot,
             resume_template=template,
+            snapshot_id=snapshot_id,
             **validated_data
         )
 

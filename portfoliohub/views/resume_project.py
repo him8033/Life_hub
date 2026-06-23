@@ -23,6 +23,9 @@ from reportlab.pdfgen import canvas
 from portfoliohub.services.resume_builder import (
     ResumeBuilder
 )
+from portfoliohub.services.resume_project_duplicate_service import (
+    ResumeProjectDuplicateService
+)
 
 
 # ============================================
@@ -142,15 +145,17 @@ class ResumeProjectDuplicateAPIView(APIView):
             user=request.user
         )
 
-        new_resume = ResumeProject.objects.create(
-            user=request.user,
-            profile_snapshot=resume.profile_snapshot,
-            resume_template=resume.resume_template,
-            title=f"{resume.title} Copy",
-            font_family=resume.font_family,
-            primary_color=resume.primary_color,
-            layout=resume.layout,
-            is_public=False
+        duplicate_snapshot = request.data.get(
+            "duplicate_snapshot",
+            False
+        )
+
+        new_resume = (
+            ResumeProjectDuplicateService.duplicate(
+                resume=resume,
+                user=request.user,
+                duplicate_snapshot=duplicate_snapshot
+            )
         )
 
         serializer = ResumeProjectSerializer(
@@ -159,8 +164,11 @@ class ResumeProjectDuplicateAPIView(APIView):
 
         return Response(
             {
-                "message": "Resume duplicated successfully",
-                "data": serializer.data
+                "message":
+                    "Resume duplicated successfully",
+
+                "data":
+                    serializer.data
             },
             status=status.HTTP_201_CREATED
         )

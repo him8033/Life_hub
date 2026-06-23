@@ -12,6 +12,9 @@ from portfoliohub.models.portfolio_project import PortfolioProject
 from portfoliohub.serializers.portfolio_project import (
     PortfolioProjectSerializer
 )
+from portfoliohub.services.portfolio_project_duplicate_service import (
+    PortfolioProjectDuplicateService
+)
 
 
 # ============================================
@@ -149,22 +152,17 @@ class PortfolioProjectDuplicateAPIView(APIView):
             user=request.user
         )
 
-        new_portfolio = PortfolioProject.objects.create(
-            user=request.user,
-            profile_snapshot=portfolio.profile_snapshot,
-            portfolio_theme=portfolio.portfolio_theme,
+        duplicate_snapshot = request.data.get(
+            "duplicate_snapshot",
+            False
+        )
 
-            title=f"{portfolio.title} (Copy)",
-
-            custom_domain=None,
-
-            seo_title=portfolio.seo_title,
-            seo_description=portfolio.seo_description,
-
-            hero_title=portfolio.hero_title,
-            hero_subtitle=portfolio.hero_subtitle,
-
-            is_public=False
+        new_portfolio = (
+            PortfolioProjectDuplicateService.duplicate(
+                portfolio=portfolio,
+                user=request.user,
+                duplicate_snapshot=duplicate_snapshot
+            )
         )
 
         serializer = PortfolioProjectSerializer(

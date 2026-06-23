@@ -2,6 +2,9 @@ from rest_framework import serializers
 import cloudinary.uploader
 
 from portfoliohub.models.resume_template import ResumeTemplate
+from portfoliohub.models.master_section import MasterSection
+from portfoliohub.models.resume_template_section import ResumeTemplateSection
+from django.db import transaction
 
 
 class ResumeTemplateSerializer(serializers.ModelSerializer):
@@ -26,6 +29,8 @@ class ResumeTemplateSerializer(serializers.ModelSerializer):
             "template_id",
 
             "name",
+            "key",
+            "description",
 
             "preview_image",
             "preview_image_url",
@@ -70,6 +75,7 @@ class ResumeTemplateSerializer(serializers.ModelSerializer):
     # CREATE
     # ============================================
 
+    @transaction.atomic
     def create(self, validated_data):
 
         image = validated_data.pop(
@@ -85,6 +91,22 @@ class ResumeTemplateSerializer(serializers.ModelSerializer):
         instance = ResumeTemplate.objects.create(
             **validated_data
         )
+
+        sections = MasterSection.objects.filter(
+            is_active=True
+        )
+
+        for index, section in enumerate(
+            sections,
+            start=1
+        ):
+            ResumeTemplateSection.objects.create(
+                template=instance,
+                section=section,
+                is_required=False,
+                is_visible=False,
+                position=index
+            )
 
         if image:
 

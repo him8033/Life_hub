@@ -3,6 +3,9 @@ import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 
 from portfoliohub.models.portfolio_theme import PortfolioTheme
+from portfoliohub.models.master_section import MasterSection
+from portfoliohub.models.portfolio_theme_section import PortfolioThemeSection
+from django.db import transaction
 
 
 class PortfolioThemeSerializer(serializers.ModelSerializer):
@@ -26,6 +29,8 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
         fields = [
             "theme_id",
             "name",
+            "key",
+            "description",
 
             "preview_image",
             "preview_image_url",
@@ -69,6 +74,7 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
     # CREATE
     # ============================================
 
+    @transaction.atomic
     def create(self, validated_data):
 
         image = validated_data.pop(
@@ -84,6 +90,23 @@ class PortfolioThemeSerializer(serializers.ModelSerializer):
         theme = PortfolioTheme.objects.create(
             **validated_data
         )
+
+        sections = MasterSection.objects.filter(
+            is_active=True
+        )
+
+        for index, section in enumerate(
+            sections,
+            start=1
+        ):
+
+            PortfolioThemeSection.objects.create(
+                theme=theme,
+                section=section,
+                is_required=False,
+                is_visible=False,
+                position=index
+            )
 
         if image:
 

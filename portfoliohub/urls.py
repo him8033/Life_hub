@@ -118,6 +118,17 @@ from portfoliohub.views.resume_export import (
     ResumeExportAPIView,
     ResumeExportDetailAPIView,
 )
+from portfoliohub.views.master_section import (
+    MasterSectionAPIView
+)
+from portfoliohub.views.resume_template_section import (
+    ResumeTemplateSectionAPIView,
+    ResumeTemplateSectionDetailAPIView,
+)
+from portfoliohub.views.portfolio_theme_section import (
+    PortfolioThemeSectionAPIView,
+    PortfolioThemeSectionDetailAPIView,
+)
 
 urlpatterns = [
     # Resume Routes
@@ -160,6 +171,13 @@ urlpatterns = [
     path("resume-templates/<str:template_id>/",
          ResumeTemplateDetailAPIView.as_view()),
 
+    path("master-sections/", MasterSectionAPIView.as_view(), name="master-sections"),
+
+    path("resume-templates/<str:template_id>/sections/",
+         ResumeTemplateSectionAPIView.as_view()),
+    path("resume-templates/<str:template_id>/sections/<str:section_id>/",
+         ResumeTemplateSectionDetailAPIView.as_view()),
+
     # Portfolio Theme Routes
     # PUBLIC
     path("public/portfolio-themes/", PublicPortfolioThemeListAPIView.as_view()),
@@ -168,6 +186,11 @@ urlpatterns = [
     path("portfolio-themes/", PortfolioThemeAPIView.as_view()),
     path("portfolio-themes/<str:theme_id>/",
          PortfolioThemeDetailAPIView.as_view()),
+
+    path("portfolio-themes/<str:theme_id>/sections/",
+         PortfolioThemeSectionAPIView.as_view(), name="portfolio-theme-sections"),
+    path("portfolio-themes/<str:theme_id>/sections/<str:section_id>/",
+         PortfolioThemeSectionDetailAPIView.as_view(), name="portfolio-theme-section-detail"),
 
     #  Skill Category Routes
     # PUBLIC
