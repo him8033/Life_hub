@@ -15,6 +15,7 @@ from portfoliohub.serializers.portfolio_project import (
 from portfoliohub.services.portfolio_project_duplicate_service import (
     PortfolioProjectDuplicateService
 )
+from portfoliohub.services.portfolio_builder import PortfolioBuilder
 
 
 # ============================================
@@ -199,11 +200,11 @@ class PublicPortfolioProjectAPIView(APIView):
 
         portfolio.refresh_from_db()
 
-        serializer = PortfolioProjectSerializer(
+        data = PortfolioBuilder.build(
             portfolio
         )
 
         return Response({
             "message": "Public portfolio fetched successfully",
-            "data": serializer.data
+            "data": data
         })
