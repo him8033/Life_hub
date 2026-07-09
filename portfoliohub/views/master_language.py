@@ -10,6 +10,7 @@ from django.db.models import Q
 from life_hub.renderers import UserRenderer
 
 from portfoliohub.models.master_language import MasterLanguage
+from portfoliohub.models.profile_language import ProfileLanguage
 from portfoliohub.serializers.master_language import (
     MasterLanguageSerializer
 )
@@ -181,6 +182,18 @@ class MasterLanguageDetailAPIView(APIView):
 
         language = self.get_object(language_id)
 
+        # Prevent inactive if already used
+        if (
+            request.data.get("is_active") is False
+            or str(request.data.get("is_active")).lower() == "false"
+        ):
+            if ProfileLanguage.objects.filter(
+                language=language
+            ).exists():
+                return Response({
+                    "message": "This language is already assigned to one or more profiles and cannot be deactivated."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = MasterLanguageSerializer(
             language,
             data=request.data,
@@ -206,6 +219,11 @@ class MasterLanguageDetailAPIView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         language = self.get_object(language_id)
+
+        if ProfileLanguage.objects.filter(language=language).exists():
+            return Response({
+                "message": "This language is already assigned to one or more profiles and cannot be deleted."
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         language.delete()
 

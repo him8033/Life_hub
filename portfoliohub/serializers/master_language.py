@@ -23,3 +23,64 @@ class MasterLanguageSerializer(serializers.ModelSerializer):
             "slug",
             "created_at",
         ]
+
+    # =========================================
+    # NAME
+    # =========================================
+
+    def validate_name(self, value):
+
+        value = value.strip()
+
+        queryset = MasterLanguage.objects.filter(
+            name__iexact=value
+        )
+
+        if self.instance:
+            queryset = queryset.exclude(
+                pk=self.instance.pk
+            )
+
+        if queryset.exists():
+            raise serializers.ValidationError(
+                "Language name already exists."
+            )
+
+        return value
+
+    # =========================================
+    # CODE
+    # =========================================
+
+    def validate_code(self, value):
+
+        value = value.strip().lower()
+
+        queryset = MasterLanguage.objects.filter(
+            code__iexact=value
+        )
+
+        if self.instance:
+            queryset = queryset.exclude(
+                pk=self.instance.pk
+            )
+
+        if queryset.exists():
+            raise serializers.ValidationError(
+                "Language code already exists."
+            )
+
+        return value
+
+    # =========================================
+    # POSITION
+    # =========================================
+
+    def validate_position(self, value):
+
+        if value < 1:
+            raise serializers.ValidationError(
+                "Position must be greater than 0."
+            )
+
+        return value
