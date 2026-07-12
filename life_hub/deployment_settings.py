@@ -45,7 +45,7 @@ DATABASES = {
 
         # Reuse database connections for 60 seconds.
         # Reduces connection overhead while avoiding stale connections.
-        conn_max_age=60,
+        conn_max_age=os.environ.get("DATABASE_MAX_AGE"),
 
         # Before reusing an old connection, Django checks whether
         # the connection is still alive.
@@ -61,7 +61,7 @@ DATABASES = {
 # If database doesn't respond within 30 seconds,
 # Django raises an exception instead of hanging forever.
 DATABASES["default"]["OPTIONS"] = {
-    "connect_timeout": 30,
+    "connect_timeout": os.environ.get("DATABASE_CONNECTION_TIMEOUT"),
 }
 
 # ==========================================================
