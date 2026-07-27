@@ -1,24 +1,30 @@
-from rest_framework import serializers
-from portfoliohub.models.profile_basic_info import ProfileBasicInfo
-from portfoliohub.models.profile_snapshot import ProfileSnapshot
 from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 import cloudinary.uploader
 
+from portfoliohub.models.profile_basic_info import ProfileBasicInfo
+from portfoliohub.models.profile_snapshot import ProfileSnapshot
 
-# ============================================
-# BASIC INFO SERIALIZER
-# ============================================
 
 class ProfileBasicInfoSerializer(serializers.ModelSerializer):
 
     profile_snapshot_id = serializers.CharField(write_only=True)
+
+    remove_image = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False
+    )
+
     image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ProfileBasicInfo
+
         fields = [
             "profilebasicinfo_id",
             "profile_snapshot_id",
+
             "first_name",
             "last_name",
             "email",
@@ -26,8 +32,11 @@ class ProfileBasicInfoSerializer(serializers.ModelSerializer):
             "summary",
             "full_address",
             "website",
+
             "image",
             "image_url",
+            "remove_image",
+
             "created_at",
             "updated_at",
         ]
@@ -60,12 +69,21 @@ class ProfileBasicInfoSerializer(serializers.ModelSerializer):
         return url
 
     # ============================================
-    # CREATE / UPDATE (UPSERT + IMAGE HANDLE)
+    # CREATE / UPDATE (UPSERT)
     # ============================================
     def create(self, validated_data):
         request = self.context["request"]
         snapshot_id = validated_data.pop("profile_snapshot_id")
-        image = validated_data.pop("image", None)
+
+        image = validated_data.pop(
+            "image",
+            None
+        )
+
+        remove_image = validated_data.pop(
+            "remove_image",
+            False
+        )
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -79,12 +97,29 @@ class ProfileBasicInfoSerializer(serializers.ModelSerializer):
         )
 
         # ============================================
-        # IMAGE UPLOAD LOGIC (MOVED HERE)
+        # REMOVE IMAGE
         # ============================================
-        if image:
-            # delete old image
+
+        if remove_image:
+
             if instance.public_id:
-                cloudinary.uploader.destroy(instance.public_id)
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
+
+            instance.image = None
+            instance.public_id = None
+
+        # ============================================
+        # REPLACE / UPLOAD IMAGE
+        # ============================================
+
+        elif image:
+
+            if instance.public_id:
+                cloudinary.uploader.destroy(
+                    instance.public_id
+                )
 
             upload = cloudinary.uploader.upload(
                 image,
@@ -104,6 +139,7 @@ class ProfileBasicInfoSerializer(serializers.ModelSerializer):
 
             instance.image = upload["public_id"]
             instance.public_id = upload["public_id"]
-            instance.save()
+
+        instance.save()
 
         return instance

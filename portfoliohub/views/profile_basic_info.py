@@ -1,18 +1,14 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from life_hub.renderers import UserRenderer
 from portfoliohub.models.profile_basic_info import ProfileBasicInfo
 from portfoliohub.models.profile_snapshot import ProfileSnapshot
 from portfoliohub.serializers.profile_basic_info import ProfileBasicInfoSerializer
 
-
-# ============================================
-# BASIC INFO CREATE / GET / UPDATE
-# ============================================
 
 class ProfileBasicInfoAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -35,7 +31,10 @@ class ProfileBasicInfoAPIView(APIView):
                 "data": None
             })
 
-        serializer = ProfileBasicInfoSerializer(basic_info)
+        serializer = ProfileBasicInfoSerializer(
+            basic_info,
+            context={"request": request}
+        )
 
         return Response({
             "message": "Basic info fetched successfully",
