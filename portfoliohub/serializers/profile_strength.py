@@ -30,6 +30,7 @@ class ProfileStrengthSerializer(serializers.ModelSerializer):
     # ============================================
 
     def create(self, validated_data):
+
         request = self.context["request"]
 
         snapshot_id = validated_data.pop("profile_snapshot_id")
@@ -39,6 +40,25 @@ class ProfileStrengthSerializer(serializers.ModelSerializer):
             profile_snapshot_id=snapshot_id,
             user=request.user
         )
+
+        # ----------------------------------------
+        # Auto assign last position
+        # ----------------------------------------
+        if validated_data.get("position") is None:
+
+            last = (
+                ProfileStrength.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
 
         return ProfileStrength.objects.create(
             profile_snapshot=snapshot,
