@@ -63,16 +63,7 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
 
         language_id = data.get("language_id")
 
-        # CREATE
-        if not self.instance and language_id:
-
-            snapshot_id = data.get("profile_snapshot_id")
-
-            snapshot = get_object_or_404(
-                ProfileSnapshot,
-                profile_snapshot_id=snapshot_id,
-                user=request.user
-            )
+        if language_id:
 
             language = get_object_or_404(
                 MasterLanguage,
@@ -80,33 +71,31 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
                 is_active=True
             )
 
-            exists = ProfileLanguage.objects.filter(
-                profile_snapshot=snapshot,
-                language=language
-            ).exists()
+            # CREATE
+            if not self.instance:
 
-            if exists:
-                raise serializers.ValidationError({
-                    "language_id": (
-                        "This language is already added to the profile."
-                    )
-                })
+                snapshot_id = data.get("profile_snapshot_id")
 
-        # UPDATE
-        elif self.instance and language_id:
+                snapshot = get_object_or_404(
+                    ProfileSnapshot,
+                    profile_snapshot_id=snapshot_id,
+                    user=request.user
+                )
 
-            language = get_object_or_404(
-                MasterLanguage,
-                masterlanguage_id=language_id,
-                is_active=True
-            )
+                exists = ProfileLanguage.objects.filter(
+                    profile_snapshot=snapshot,
+                    language=language
+                ).exists()
 
-            exists = ProfileLanguage.objects.filter(
-                profile_snapshot=self.instance.profile_snapshot,
-                language=language
-            ).exclude(
-                id=self.instance.id
-            ).exists()
+            # UPDATE
+            else:
+
+                exists = ProfileLanguage.objects.filter(
+                    profile_snapshot=self.instance.profile_snapshot,
+                    language=language
+                ).exclude(
+                    id=self.instance.id
+                ).exists()
 
             if exists:
                 raise serializers.ValidationError({
@@ -125,8 +114,13 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
 
         request = self.context["request"]
 
-        snapshot_id = validated_data.pop("profile_snapshot_id")
-        language_id = validated_data.pop("language_id")
+        snapshot_id = validated_data.pop(
+            "profile_snapshot_id"
+        )
+
+        language_id = validated_data.pop(
+            "language_id"
+        )
 
         snapshot = get_object_or_404(
             ProfileSnapshot,
@@ -139,6 +133,26 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
             masterlanguage_id=language_id,
             is_active=True
         )
+
+        # ----------------------------------------
+        # Auto assign last position
+        # ----------------------------------------
+
+        if validated_data.get("position") is None:
+
+            last = (
+                ProfileLanguage.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
 
         return ProfileLanguage.objects.create(
             profile_snapshot=snapshot,
@@ -154,16 +168,24 @@ class ProfileLanguageSerializer(serializers.ModelSerializer):
 
         if "language_id" in validated_data:
 
+            language_id = validated_data.pop(
+                "language_id"
+            )
+
             language = get_object_or_404(
                 MasterLanguage,
-                masterlanguage_id=validated_data.pop("language_id"),
+                masterlanguage_id=language_id,
                 is_active=True
             )
 
             instance.language = language
 
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            setattr(
+                instance,
+                attr,
+                value
+            )
 
         instance.save()
 
