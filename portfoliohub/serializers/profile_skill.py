@@ -11,7 +11,15 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
     profile_snapshot_id = serializers.CharField(write_only=True)
     skill_id = serializers.CharField(write_only=True)
 
+    # ============================================
     # MASTER SKILL DATA
+    # ============================================
+
+    skill_value = serializers.CharField(
+        source="skill.masterskill_id",
+        read_only=True
+    )
+
     skill_name = serializers.CharField(
         source="skill.name",
         read_only=True
@@ -36,8 +44,8 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProfileSkill
-        fields = [
 
+        fields = [
             "profileskill_id",
 
             "profile_snapshot_id",
@@ -46,13 +54,14 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
             "skill_id",
 
             # MASTER SKILL INFO
+            "skill_value",
             "skill_name",
             "skill_slug",
             "skill_icon",
             "category_name",
             "image_url",
 
-            # USER CUSTOM DATA
+            # USER DATA
             "level",
             "years_of_experience",
             "is_featured",
@@ -68,6 +77,7 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
             "profileskill_id",
             "skill",
 
+            "skill_value",
             "skill_name",
             "skill_slug",
             "skill_icon",
@@ -101,6 +111,37 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
         return url
 
     # ============================================
+    # UNIQUE SKILL VALIDATION
+    # ============================================
+
+    def validate_unique_skill(
+        self,
+        snapshot,
+        skill,
+        exclude_id=None
+    ):
+
+        queryset = ProfileSkill.objects.filter(
+            profile_snapshot=snapshot
+        )
+
+        if exclude_id:
+            queryset = queryset.exclude(
+                id=exclude_id
+            )
+
+        # Duplicate same skill only
+        if queryset.filter(
+            skill=skill
+        ).exists():
+
+            raise serializers.ValidationError({
+                "skill_id": [
+                    "This skill is already added to the profile."
+                ]
+            })
+
+    # ============================================
     # VALIDATION
     # ============================================
 
@@ -127,17 +168,10 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
                 is_active=True
             )
 
-            exists = ProfileSkill.objects.filter(
-                profile_snapshot=snapshot,
-                skill=skill
-            ).exists()
-
-            if exists:
-                raise serializers.ValidationError({
-                    "skill_id": (
-                        "This skill is already added to the profile."
-                    )
-                })
+            self.validate_unique_skill(
+                snapshot,
+                skill
+            )
 
         # UPDATE
         elif self.instance and skill_id:
@@ -148,19 +182,11 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
                 is_active=True
             )
 
-            exists = ProfileSkill.objects.filter(
-                profile_snapshot=self.instance.profile_snapshot,
-                skill=skill
-            ).exclude(
-                id=self.instance.id
-            ).exists()
-
-            if exists:
-                raise serializers.ValidationError({
-                    "skill_id": (
-                        "This skill is already added to the profile."
-                    )
-                })
+            self.validate_unique_skill(
+                self.instance.profile_snapshot,
+                skill,
+                exclude_id=self.instance.id
+            )
 
         return data
 
@@ -205,8 +231,50 @@ class ProfileSkillSerializer(serializers.ModelSerializer):
             is_active=True
         )
 
+        # Auto assign last position
+        if validated_data.get("position") is None:
+
+            last = (
+                ProfileSkill.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                last.position + 1
+                if last and last.position is not None
+                else 0
+            )
+
         return ProfileSkill.objects.create(
             profile_snapshot=snapshot,
             skill=skill,
             **validated_data
         )
+
+    # ============================================
+    # UPDATE
+    # ============================================
+
+    def update(self, instance, validated_data):
+
+        if "skill_id" in validated_data:
+
+            skill_id = validated_data.pop("skill_id")
+
+            skill = get_object_or_404(
+                MasterSkill,
+                masterskill_id=skill_id,
+                is_active=True
+            )
+
+            instance.skill = skill
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
