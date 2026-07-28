@@ -104,12 +104,32 @@ class ProfileExperienceSerializer(serializers.ModelSerializer):
             user=request.user
         )
 
+        # ----------------------------------------
+        # Auto assign last position
+        # ----------------------------------------
+        if validated_data.get("position") is None:
+            last = (
+                ProfileExperience.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
+
         instance = ProfileExperience.objects.create(
             profile_snapshot=snapshot,
             **validated_data
         )
 
-        # IMAGE HANDLE
+        # ----------------------------------------
+        # Upload company logo
+        # ----------------------------------------
         if logo:
             upload = cloudinary.uploader.upload(
                 logo,
