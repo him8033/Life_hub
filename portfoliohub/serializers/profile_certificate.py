@@ -113,6 +113,24 @@ class ProfileCertificateSerializer(serializers.ModelSerializer):
             user=request.user
         )
 
+        # ----------------------------------------
+        # Auto assign last position
+        # ----------------------------------------
+        if validated_data.get("position") is None:
+            last = (
+                ProfileCertificate.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
+
         instance = ProfileCertificate.objects.create(
             profile_snapshot=snapshot,
             **validated_data
