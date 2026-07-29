@@ -110,6 +110,25 @@ class ProfileProjectSerializer(serializers.ModelSerializer):
             None
         )
 
+        # ----------------------------------------
+        # Auto assign last position
+        # ----------------------------------------
+        if validated_data.get("position") is None:
+
+            last = (
+                ProfileProject.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
+
         project = ProfileProject.objects.create(
             profile_snapshot=snapshot,
             **validated_data

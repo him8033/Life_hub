@@ -142,17 +142,35 @@ class ProfileProjectDetailAPIView(APIView):
         })
 
     def delete(self, request, project_id):
-
         project = self.get_object(
             request,
             project_id
         )
 
-        # DELETE CLOUDINARY IMAGE
+        # ----------------------------------------
+        # Delete project thumbnail
+        # ----------------------------------------
+
         if project.public_id:
             cloudinary.uploader.destroy(
                 project.public_id
             )
+
+        # ----------------------------------------
+        # Delete all project gallery images
+        # ----------------------------------------
+
+        for image in project.images.all():
+
+            if image.public_id:
+                cloudinary.uploader.destroy(
+                    image.public_id
+                )
+
+        # ----------------------------------------
+        # Delete project
+        # (CASCADE deletes ProjectImage and ProjectSkill)
+        # ----------------------------------------
 
         project.delete()
 

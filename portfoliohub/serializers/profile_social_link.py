@@ -1,5 +1,5 @@
-from django.db.models import Max
 from django.shortcuts import get_object_or_404
+
 from rest_framework import serializers
 
 from portfoliohub.models.profile_social_link import ProfileSocialLink
@@ -28,7 +28,6 @@ class ProfileSocialLinkSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "profilesociallink_id",
-            "position",
             "created_at",
             "updated_at",
         ]
@@ -43,13 +42,18 @@ class ProfileSocialLinkSerializer(serializers.ModelSerializer):
 
         # CREATE
         if self.instance is None:
+
             snapshot = get_object_or_404(
                 ProfileSnapshot,
-                profile_snapshot_id=attrs.get("profile_snapshot_id"),
+                profile_snapshot_id=attrs.get(
+                    "profile_snapshot_id"
+                ),
                 user=request.user,
             )
+
         # UPDATE
         else:
+
             snapshot = self.instance.profile_snapshot
 
         platform_name = attrs.get(
@@ -68,22 +72,30 @@ class ProfileSocialLinkSerializer(serializers.ModelSerializer):
 
         # Ignore current record while updating
         if self.instance:
-            queryset = queryset.exclude(pk=self.instance.pk)
+            queryset = queryset.exclude(
+                pk=self.instance.pk
+            )
 
         # Duplicate platform
         if queryset.filter(
             platform_name__iexact=platform_name
         ).exists():
+
             raise serializers.ValidationError({
-                "platform_name": "This platform already exists."
+                "platform_name": (
+                    "This platform already exists."
+                )
             })
 
         # Duplicate URL
         if queryset.filter(
             url__iexact=url
         ).exists():
+
             raise serializers.ValidationError({
-                "url": "This URL already exists."
+                "url": (
+                    "This URL already exists."
+                )
             })
 
         return attrs
@@ -106,25 +118,38 @@ class ProfileSocialLinkSerializer(serializers.ModelSerializer):
             user=request.user,
         )
 
+        # ----------------------------------------
         # Only one primary link
+        # ----------------------------------------
+
         if validated_data.get("is_primary", False):
+
             ProfileSocialLink.objects.filter(
                 profile_snapshot=snapshot,
                 is_primary=True,
-            ).update(is_primary=False)
+            ).update(
+                is_primary=False
+            )
 
+        # ----------------------------------------
         # Auto assign last position
-        last_position = (
-            ProfileSocialLink.objects.filter(
-                profile_snapshot=snapshot
-            ).aggregate(
-                max_position=Max("position")
-            )["max_position"]
-        )
+        # ----------------------------------------
 
-        validated_data["position"] = (
-            0 if last_position is None else last_position + 1
-        )
+        if validated_data.get("position") is None:
+
+            last = (
+                ProfileSocialLink.objects.filter(
+                    profile_snapshot=snapshot
+                )
+                .order_by("-position")
+                .first()
+            )
+
+            validated_data["position"] = (
+                (last.position + 1)
+                if last and last.position is not None
+                else 0
+            )
 
         return ProfileSocialLink.objects.create(
             profile_snapshot=snapshot,
@@ -137,17 +162,27 @@ class ProfileSocialLinkSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
+        # ----------------------------------------
         # Only one primary link
+        # ----------------------------------------
+
         if validated_data.get("is_primary", False):
+
             ProfileSocialLink.objects.filter(
                 profile_snapshot=instance.profile_snapshot,
                 is_primary=True,
             ).exclude(
                 pk=instance.pk
-            ).update(is_primary=False)
+            ).update(
+                is_primary=False
+            )
 
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            setattr(
+                instance,
+                attr,
+                value
+            )
 
         instance.save()
 
