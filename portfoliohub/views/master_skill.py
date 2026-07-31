@@ -6,13 +6,14 @@ from rest_framework.permissions import (
 )
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
 
 import cloudinary.uploader
 from life_hub.renderers import UserRenderer
 from portfoliohub.models.master_skill import MasterSkill
 from portfoliohub.serializers.master_skill import MasterSkillSerializer
 from portfoliohub.pagination import MasterSkillAdminPagination
+from portfoliohub.pagination import PublicMasterSkillPagination
 
 
 class PublicMasterSkillListAPIView(APIView):
@@ -21,20 +22,84 @@ class PublicMasterSkillListAPIView(APIView):
 
     def get(self, request):
 
-        queryset = MasterSkill.objects.filter(
-            is_active=True
-        ).select_related("category").order_by(
-            "category__position",
-            "priority",
-            "name"
+        queryset = (
+            MasterSkill.objects.filter(
+                is_active=True
+            )
+            .select_related("category")
         )
 
-        serializer = MasterSkillSerializer(queryset, many=True)
+        # =========================================
+        # SEARCH
+        # =========================================
 
-        return Response({
-            "message": "Master skills fetched successfully",
-            "data": serializer.data
-        })
+        search = request.query_params.get(
+            "search",
+            ""
+        ).strip()
+
+        if search:
+
+            queryset = (
+                queryset.filter(
+                    Q(name__icontains=search) |
+                    Q(slug__icontains=search)
+                )
+                .annotate(
+                    search_rank=Case(
+                        # Exact name
+                        When(name__iexact=search, then=Value(1)),
+
+                        # Starts with name
+                        When(name__istartswith=search, then=Value(2)),
+
+                        # Contains in name
+                        When(name__icontains=search, then=Value(3)),
+
+                        # Starts with slug
+                        When(slug__istartswith=search, then=Value(4)),
+
+                        # Contains in slug
+                        When(slug__icontains=search, then=Value(5)),
+
+                        default=Value(6),
+                        output_field=IntegerField(),
+                    )
+                )
+                .order_by(
+                    "search_rank",
+                    "name"
+                )
+            )
+
+        else:
+
+            # Initial suggestions
+            queryset = queryset.order_by(
+                "-priority",
+                "name"
+            )
+
+        # =========================================
+        # PAGINATION
+        # =========================================
+
+        paginator = PublicMasterSkillPagination()
+
+        page = paginator.paginate_queryset(
+            queryset,
+            request,
+            view=self
+        )
+
+        serializer = MasterSkillSerializer(
+            page,
+            many=True
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
 
 # ============================================
