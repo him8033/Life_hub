@@ -5,7 +5,7 @@ from rest_framework.permissions import (
 )
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import (Q, Case, When, Value, IntegerField,)
 
 from life_hub.renderers import UserRenderer
 
@@ -15,6 +15,7 @@ from portfoliohub.serializers.master_language import (
     MasterLanguageSerializer
 )
 from portfoliohub.pagination import MasterLanguageAdminPagination
+from portfoliohub.pagination import PublicMasterLanguagePagination
 
 
 # ============================================
@@ -29,20 +30,90 @@ class PublicMasterLanguageListAPIView(APIView):
 
         queryset = MasterLanguage.objects.filter(
             is_active=True
-        ).order_by(
-            "position",
-            "name"
+        )
+
+        # =========================================
+        # SEARCH
+        # =========================================
+
+        search = request.query_params.get(
+            "search",
+            ""
+        ).strip()
+
+        if search:
+
+            queryset = (
+                queryset.filter(
+                    Q(name__icontains=search) |
+                    Q(code__icontains=search) |
+                    Q(slug__icontains=search)
+                )
+                .annotate(
+                    search_rank=Case(
+
+                        # Exact name
+                        When(name__iexact=search, then=Value(1)),
+
+                        # Exact code
+                        When(code__iexact=search, then=Value(2)),
+
+                        # Starts with name
+                        When(name__istartswith=search, then=Value(3)),
+
+                        # Starts with code
+                        When(code__istartswith=search, then=Value(4)),
+
+                        # Starts with slug
+                        When(slug__istartswith=search, then=Value(5)),
+
+                        # Contains name
+                        When(name__icontains=search, then=Value(6)),
+
+                        # Contains code
+                        When(code__icontains=search, then=Value(7)),
+
+                        # Contains slug
+                        When(slug__icontains=search, then=Value(8)),
+
+                        default=Value(9),
+                        output_field=IntegerField(),
+                    )
+                )
+                .order_by(
+                    "search_rank",
+                    "position",
+                    "name"
+                )
+            )
+
+        else:
+
+            queryset = queryset.order_by(
+                "position",
+                "name"
+            )
+
+        # =========================================
+        # PAGINATION
+        # =========================================
+
+        paginator = PublicMasterLanguagePagination()
+
+        page = paginator.paginate_queryset(
+            queryset,
+            request,
+            view=self
         )
 
         serializer = MasterLanguageSerializer(
-            queryset,
+            page,
             many=True
         )
 
-        return Response({
-            "message": "Languages fetched successfully",
-            "data": serializer.data
-        })
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
 
 # ============================================
