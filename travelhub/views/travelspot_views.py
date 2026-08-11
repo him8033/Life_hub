@@ -24,7 +24,13 @@ class TravelSpotDetailAPIView(APIView):
     Full view:
     - Public → limited data (only if active)
     - Authenticated → full data
+    - View count:
+        - Anonymous user → count
+        - Normal authenticated user → count
+        - Admin → don't count
+        - Creator/owner → don't count
     """
+
     renderer_classes = [UserRenderer]
     permission_classes = []
 
@@ -54,46 +60,81 @@ class TravelSpotDetailAPIView(APIView):
             )
 
         # ===============================
+        # View counting eligibility
+        # ===============================
+        should_count_view = True
+
+        if request.user.is_authenticated:
+
+            # Admin should not increase view count
+            if request.user.is_admin:
+                should_count_view = False
+
+            # Creator/owner should not increase view count
+            elif spot.created_by_id == request.user.id:
+                should_count_view = False
+
+        # ===============================
         # View counting logic
         # ===============================
-        ip = get_client_ip(request)
-        user = request.user if request.user.is_authenticated else None
-        since = timezone.now() - timedelta(hours=24)
+        if should_count_view:
 
-        view_query = TravelSpotView.objects.filter(
-            travelspot=spot,
-            viewed_at__gte=since
-        )
-
-        if user:
-            view_query = view_query.filter(
-                models.Q(user=user) | models.Q(ip_address=ip)
+            ip = get_client_ip(request)
+            user = (
+                request.user
+                if request.user.is_authenticated
+                else None
             )
-        else:
-            view_query = view_query.filter(ip_address=ip)
 
-        view_exists = view_query.exists()
+            since = timezone.now() - timedelta(hours=24)
 
-        if not view_exists:
-            TravelSpotView.objects.create(
+            view_query = TravelSpotView.objects.filter(
                 travelspot=spot,
-                user=user,
-                ip_address=ip
+                viewed_at__gte=since
             )
 
-            # Safe increment
-            TravelSpot.objects.filter(pk=spot.pk).update(
-                view_count=F("view_count") + 1
-            )
+            if user:
+                view_query = view_query.filter(
+                    models.Q(user=user) |
+                    models.Q(ip_address=ip)
+                )
+            else:
+                view_query = view_query.filter(
+                    ip_address=ip
+                )
 
-            spot.refresh_from_db(fields=["view_count"])
+            view_exists = view_query.exists()
 
+            if not view_exists:
+                TravelSpotView.objects.create(
+                    travelspot=spot,
+                    user=user,
+                    ip_address=ip
+                )
+
+                # Safe increment
+                TravelSpot.objects.filter(
+                    pk=spot.pk
+                ).update(
+                    view_count=F("view_count") + 1
+                )
+
+                spot.refresh_from_db(
+                    fields=["view_count"]
+                )
+
+        # ===============================
+        # Response
+        # ===============================
         serializer = TravelSpotSerializer(spot)
 
-        return Response({
-            "message": "Travel spot fetched successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "Travel spot fetched successfully",
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class TravelSpotUpdateDeleteAPIView(APIView):
