@@ -40,14 +40,20 @@ class UserMeSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         user = obj.user
+        roles_list = list(user.roles.values_list('slug', flat=True))
+        primary_role = "admin" if "admin" in roles_list or user.is_superuser else (roles_list[0] if roles_list else "user")
         return {
-            "id": user.id,
+            "id": user.user_id,
+            "user_id": user.user_id,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "full_name": user.full_name,
-            "role": user.role,
-            "is_verified": user.is_verified,
+            "role": primary_role,
+            "roles": roles_list,
+            "is_superuser": user.is_superuser,
+            "status": user.status.slug if user.status else None,
+            "email_verified": user.email_verified,
         }
 
     # -------------------------

@@ -33,15 +33,16 @@ def send_jwt_token_response(user):
         "access": str(refresh.access_token),
 
         "user": {
-            "id": user.id,
+            "id": user.user_id,
             "email": user.email,
 
             "first_name": user.first_name,
             "last_name": user.last_name,
             "full_name": user.full_name,
 
-            "role": user.role,
-            "is_verified": user.is_verified,
+            "roles": list(user.roles.values_list('slug', flat=True)),
+            "status": user.status.slug if user.status else None,
+            "email_verified": user.email_verified,
 
             # image
             "profile_image": profile_image_url,

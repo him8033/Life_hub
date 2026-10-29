@@ -70,7 +70,7 @@ class UserProfile(models.Model):
     def save(self, *args, **kwargs):
         if not self.profile_id:
             while True:
-                candidate = generate_ulid_with_prefix("usr")
+                candidate = generate_ulid_with_prefix("prf")
                 if not UserProfile.objects.filter(profile_id=candidate).exists():
                     self.profile_id = candidate
                     break

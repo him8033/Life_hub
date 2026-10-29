@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from life_hub.renderers import UserRenderer
+from account.models.user_profile import UserProfile
 from account.serializers.user_profile import (
     UserProfileSerializer,
     UserProfileImageReplaceSerializer
@@ -23,7 +24,7 @@ class UserProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         serializer = UserProfileSerializer(profile)
 
@@ -33,7 +34,7 @@ class UserProfileAPIView(APIView):
         })
 
     def put(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         serializer = UserProfileSerializer(
             profile,
@@ -61,7 +62,7 @@ class UserProfileImageAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         serializer = UserProfileImageReplaceSerializer(
             profile,
@@ -86,7 +87,7 @@ class UserProfileImageDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         if not profile.public_id:
             return Response(
@@ -94,7 +95,10 @@ class UserProfileImageDeleteAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        cloudinary.uploader.destroy(profile.public_id)
+        try:
+            cloudinary.uploader.destroy(profile.public_id)
+        except Exception:
+            pass
 
         profile.profile_image = None
         profile.public_id = None

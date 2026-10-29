@@ -5,6 +5,7 @@ from rest_framework import status
 from django.db import transaction
 
 from life_hub.renderers import UserRenderer
+from account.models.user_profile import UserProfile
 from account.models.user_social_link import UserSocialLink
 from account.serializers.user_social_link import (
     UserSocialLinkSerializer,
@@ -21,7 +22,7 @@ class UserSocialLinkAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         links = UserSocialLink.objects.filter(
             user_profile=profile,
@@ -36,7 +37,7 @@ class UserSocialLinkAPIView(APIView):
         })
 
     def post(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         serializer = UserSocialLinkSerializer(
             data=request.data,
@@ -61,12 +62,18 @@ class UserSocialLinkUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, usersociallink_id):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-        link = UserSocialLink.objects.get(
-            usersociallink_id=usersociallink_id,
-            user_profile=profile
-        )
+        try:
+            link = UserSocialLink.objects.get(
+                usersociallink_id=usersociallink_id,
+                user_profile=profile
+            )
+        except UserSocialLink.DoesNotExist:
+            return Response(
+                {"message": "Social link not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = UserSocialLinkSerializer(
             link,
@@ -82,6 +89,9 @@ class UserSocialLinkUpdateAPIView(APIView):
             "data": serializer.data
         })
 
+    def delete(self, request, usersociallink_id):
+        return UserSocialLinkDeleteAPIView().delete(request, usersociallink_id)
+
 
 # ============================================
 # SET PRIMARY
@@ -93,12 +103,18 @@ class UserSocialLinkSetPrimaryAPIView(APIView):
 
     @transaction.atomic
     def patch(self, request, usersociallink_id):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-        link = UserSocialLink.objects.select_for_update().get(
-            usersociallink_id=usersociallink_id,
-            user_profile=profile
-        )
+        try:
+            link = UserSocialLink.objects.select_for_update().get(
+                usersociallink_id=usersociallink_id,
+                user_profile=profile
+            )
+        except UserSocialLink.DoesNotExist:
+            return Response(
+                {"message": "Social link not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # Remove existing primary
         UserSocialLink.objects.filter(
@@ -125,7 +141,7 @@ class UserSocialLinkReorderAPIView(APIView):
 
     @transaction.atomic
     def patch(self, request):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
         serializer = UserSocialLinkReorderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -170,12 +186,18 @@ class UserSocialLinkDeleteAPIView(APIView):
 
     @transaction.atomic
     def delete(self, request, usersociallink_id):
-        profile = request.user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-        link = UserSocialLink.objects.select_for_update().get(
-            usersociallink_id=usersociallink_id,
-            user_profile=profile
-        )
+        try:
+            link = UserSocialLink.objects.select_for_update().get(
+                usersociallink_id=usersociallink_id,
+                user_profile=profile
+            )
+        except UserSocialLink.DoesNotExist:
+            return Response(
+                {"message": "Social link not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         links = UserSocialLink.objects.filter(
             user_profile=profile
@@ -198,8 +220,9 @@ class UserSocialLinkDeleteAPIView(APIView):
                 user_profile=profile
             ).order_by("position").first()
 
-            next_link.is_primary = True
-            next_link.save(update_fields=["is_primary"])
+            if next_link:
+                next_link.is_primary = True
+                next_link.save(update_fields=["is_primary"])
 
         # Reorder
         remaining = UserSocialLink.objects.filter(
