@@ -298,6 +298,37 @@ class EmailVerificationAndLoginTestCase(TestCase):
         self.assertTrue(login_after.is_valid(), login_after.errors)
         self.assertEqual(login_after.validated_user.email, "newuser@example.com")
 
+    @patch("account.models.otp.OTP.generate_code", return_value="112233")
+    @patch("account.services.email_service.EmailService.send_otp_email", return_value=True)
+    def test_email_verification_with_empty_or_omitted_reset_token(self, mock_email, mock_code):
+        import json
+        from rest_framework.test import APIClient
+        client = APIClient()
+
+        # 1. Register a new user
+        reg_res = client.post("/api/v1/auth/register/", {
+            "email": "reg_user@example.com",
+            "first_name": "Reg",
+            "last_name": "User",
+            "password": "StrongPassword123!",
+            "password2": "StrongPassword123!",
+            "tc": True,
+        }, format="json")
+        self.assertEqual(reg_res.status_code, 201)
+
+        # 2. Verify with empty string reset_token (as frontend form data previously submitted)
+        verify_res = client.post("/api/v1/auth/verify-otp/", {
+            "email": "reg_user@example.com",
+            "otp_code": "112233",
+            "purpose": "email_verification",
+            "reset_token": "",
+        }, format="json")
+        self.assertEqual(verify_res.status_code, 200)
+        verify_data = json.loads(verify_res.content.decode("utf-8"))
+        self.assertTrue(verify_data["success"])
+        self.assertEqual(verify_data["message"], "Email verified successfully")
+        self.assertIn("tokens", verify_data["data"])
+
 
 class TokenRefreshTestCase(TestCase):
     def setUp(self):
@@ -1020,8 +1051,93 @@ class AdminUserActivationAndLoginTestCase(TestCase):
         self.assertEqual(user.status.slug, "active")
         self.assertIsNotNone(user.email_verified_at)
 
+class UserHardDeleteTestCase(TestCase):
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.client = APIClient()
 
+        self.active_status, _ = UserStatus.objects.get_or_create(
+            slug="active",
+            defaults={"name": "Active", "is_active": True}
+        )
+        self.role_admin, _ = Role.objects.get_or_create(
+            slug="admin",
+            defaults={"name": "Admin", "is_active": True}
+        )
+        self.role_user, _ = Role.objects.get_or_create(
+            slug="user",
+            defaults={"name": "User", "is_active": True}
+        )
+        self.perm_user_delete, _ = Permission.objects.get_or_create(
+            slug="user.delete",
+            defaults={"name": "Delete User", "module": "user", "action": "delete", "is_active": True}
+        )
+        RolePermission.objects.get_or_create(role=self.role_admin, permission=self.perm_user_delete)
 
+        self.admin = User.objects.create_superuser(
+            email="admin_delete_tester@example.com",
+            password="StrongPassword123!",
+            first_name="Admin",
+            last_name="Tester"
+        )
+        self.admin.status = self.active_status
+        self.admin.save()
+        UserRole.objects.get_or_create(user=self.admin, role=self.role_admin)
 
+    def test_admin_hard_deletes_user_without_permanent_flag(self):
+        import json
+        self.client.force_authenticate(user=self.admin)
 
+        # 1. Create user
+        target_user = User.objects.create_user(
+            email="to_be_deleted@example.com",
+            password="StrongPassword123!",
+            first_name="Target",
+            last_name="User"
+        )
+        user_id = target_user.user_id
 
+        # 2. Delete user without permanent flag
+        del_res = self.client.delete(f"/api/v1/accounts/users/{user_id}/delete/", {
+            "reason": "Account removal test",
+            "send_email": False
+        }, format="json")
+
+        self.assertEqual(del_res.status_code, 200)
+        del_data = json.loads(del_res.content.decode("utf-8"))
+        self.assertTrue(del_data["success"])
+        self.assertEqual(del_data["message"], "User deleted successfully.")
+
+        # 3. Assert user is completely removed (hard deleted) from database
+        self.assertFalse(User.objects.filter(user_id=user_id).exists())
+
+    def test_admin_cannot_delete_self(self):
+        import json
+        self.client.force_authenticate(user=self.admin)
+
+        del_res = self.client.delete(f"/api/v1/accounts/users/{self.admin.user_id}/delete/", {}, format="json")
+        self.assertEqual(del_res.status_code, 400)
+        del_data = json.loads(del_res.content.decode("utf-8"))
+        self.assertIn("You cannot delete your own account.", del_data["message"])
+
+        # Admin must still exist
+        self.assertTrue(User.objects.filter(user_id=self.admin.user_id).exists())
+
+    def test_delete_user_empty_payload(self):
+        import json
+        self.client.force_authenticate(user=self.admin)
+
+        target_user = User.objects.create_user(
+            email="empty_payload_delete@example.com",
+            password="StrongPassword123!",
+            first_name="Empty",
+            last_name="Payload"
+        )
+        user_id = target_user.user_id
+
+        # Delete with empty payload
+        del_res = self.client.delete(f"/api/v1/accounts/users/{user_id}/delete/", {}, format="json")
+        self.assertEqual(del_res.status_code, 200)
+
+        # User is hard deleted
+        self.assertFalse(User.objects.filter(user_id=user_id).exists())

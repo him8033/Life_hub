@@ -211,9 +211,7 @@ class UserListView(APIView):
         # Base queryset
         # ----------------------------------------------------
 
-        users = User.objects.filter(
-            deleted_at__isnull=True
-        )
+        users = User.objects.all()
 
         # ----------------------------------------------------
         # Search
@@ -352,7 +350,6 @@ class UserDetailView(APIView):
         user = get_object_or_404(
             User,
             user_id=user_id,
-            deleted_at__isnull=True,
         )
 
         # ----------------------------------------------------
@@ -444,7 +441,6 @@ class UserEditView(APIView):
         user = get_object_or_404(
             User,
             user_id=user_id,
-            deleted_at__isnull=True,
         )
 
         # ----------------------------------------------------
@@ -880,7 +876,6 @@ class UserStatusUpdateView(APIView):
         user = get_object_or_404(
             User,
             user_id=user_id,
-            deleted_at__isnull=True,
         )
 
         # ----------------------------------------------------
@@ -1069,21 +1064,12 @@ class UserStatusUpdateView(APIView):
 
 class UserDeleteView(APIView):
     """
-    Admin API for soft or permanent deletion.
+    Admin API for deleting a user (always hard delete).
 
-    Soft delete:
-
+    Request body (optional):
     {
-        "permanent": false,
-        "reason": "Account requested deletion",
+        "reason": "Administrative deletion",
         "send_email": true
-    }
-
-    Permanent delete:
-
-    {
-        "permanent": true,
-        "reason": "Administrative deletion"
     }
     """
 
@@ -1115,24 +1101,42 @@ class UserDeleteView(APIView):
         user = get_object_or_404(
             User,
             user_id=user_id,
-            deleted_at__isnull=True,
         )
+
+        # ----------------------------------------------------
+        # Prevent self-deletion
+        # ----------------------------------------------------
+
+        if user.id == request.user.id:
+            return Response(
+                {
+                    "message": "You cannot delete your own account."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ----------------------------------------------------
+        # Superuser protection
+        # ----------------------------------------------------
+
+        if user.is_superuser and not request.user.is_superuser:
+            return Response(
+                {
+                    "message": "You do not have permission to delete a superuser."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # ----------------------------------------------------
         # Validate
         # ----------------------------------------------------
 
         serializer = UserDeleteSerializer(
-            data=request.data
+            data=request.data or {}
         )
 
         serializer.is_valid(
             raise_exception=True
-        )
-
-        permanent = serializer.validated_data.get(
-            "permanent",
-            False,
         )
 
         reason = serializer.validated_data.get(
@@ -1150,62 +1154,6 @@ class UserDeleteView(APIView):
         # ----------------------------------------------------
 
         user_email = user.email
-
-        # ====================================================
-        # PERMANENT DELETE
-        # ====================================================
-
-        if permanent:
-
-            # ------------------------------------------------
-            # Revoke sessions
-            # ------------------------------------------------
-
-            SessionService.revoke_all_sessions(
-                user
-            )
-
-            # ------------------------------------------------
-            # Email
-            # ------------------------------------------------
-
-            if send_email:
-
-                EmailService.send_delete_email(
-                    to_email=user_email,
-                    reason=reason,
-                    admin_email=request.user.email,
-                )
-
-            # ------------------------------------------------
-            # Delete
-            # ------------------------------------------------
-
-            user.delete()
-
-            return Response(
-                {
-                    "message": (
-                        "User permanently deleted."
-                    )
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        # ====================================================
-        # SOFT DELETE
-        # ====================================================
-
-        user.deleted_at = timezone.now()
-        user.is_active = False
-
-        user.save(
-            update_fields=[
-                "deleted_at",
-                "is_active",
-                "updated_at",
-            ]
-        )
 
         # ----------------------------------------------------
         # Revoke sessions
@@ -1226,6 +1174,12 @@ class UserDeleteView(APIView):
                 reason=reason,
                 admin_email=request.user.email,
             )
+
+        # ----------------------------------------------------
+        # Hard delete
+        # ----------------------------------------------------
+
+        user.delete()
 
         return Response(
             {

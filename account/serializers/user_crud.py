@@ -198,16 +198,13 @@ class UserStatusUpdateSerializer(serializers.Serializer):
 
 class UserDeleteSerializer(serializers.Serializer):
     """
-    Admin serializer for soft deleting or permanently
-    deleting a user.
+    Admin serializer for deleting a user.
     """
 
     permanent = serializers.BooleanField(
-        default=False,
-        help_text=(
-            "Permanently delete user. "
-            "Soft delete if False."
-        ),
+        required=False,
+        default=True,
+        help_text="Deprecated: Deletions are always permanent.",
     )
 
     reason = serializers.CharField(

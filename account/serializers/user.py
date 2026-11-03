@@ -223,7 +223,7 @@ class OTPVerificationSerializer(serializers.Serializer):
         ]
     )
 
-    reset_token = serializers.CharField(required=False)  # JWT token from forgot password
+    reset_token = serializers.CharField(required=False, allow_blank=True, allow_null=True, default="")  # JWT token from forgot password
 
     def validate(self, attrs):
         try:
